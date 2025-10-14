@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net9.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TaskManagerApp</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- Display name -->
+    <ApplicationTitle>Task Manager</ApplicationTitle>
+
+    <!-- App Identifier -->
+    <ApplicationId>com.tutorial.taskmanager</ApplicationId>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App Icon -->
+    <!--MauiIcon Include="Resources\Images\appicon.svg" ForegroundFile="Resources\Images\appiconfg.svg" Color="#512BD4" /-->
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Images\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <!-- Images -->
+    <MauiImage Include="Resources\Images\*" />
+    <!-- Fonts -->
+    <MauiFont Include="Resources\Fonts\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Domain.fs" />
+    <Compile Include="MockData.fs" />
+    <Compile Include="Controls\RadialSlider.fs" />
+    <Compile Include="Features\TaskList\Types.fs" />
+    <Compile Include="Features\TaskList\State.fs" />
+    <Compile Include="Features\TaskList\View.fs" />
+    <Compile Include="Features\TaskDetail\Types.fs" />
+    <Compile Include="Features\TaskDetail\State.fs" />
+    <Compile Include="Features\TaskDetail\View.fs" />
+    <Compile Include="Root\Types.fs" />
+    <Compile Include="Root\State.fs" />
+    <Compile Include="Root\View.fs" />
+    <Compile Include="MauiProgram.fs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <Compile Include="Platforms\Android\MainActivity.fs" />
+    <Compile Include="Platforms\Android\MainApplication.fs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <Compile Include="Platforms\iOS\AppDelegate.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.111" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.111" />
+    <PackageReference Include="Fabulous.MauiControls" Version="8.0.5" />
+    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="2.88.6" />
+  </ItemGroup>
+
+</Project>
