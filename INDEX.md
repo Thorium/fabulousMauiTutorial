@@ -164,13 +164,6 @@ let mapCmdMsg = function
 - **SkiaSharp** - 2D graphics library
 - **MVU** - Model-View-Update architecture
 
-## 🎯 What This Tutorial Is NOT
-
-❌ Not using real authentication/authorization  
-❌ Not connected to real backend services  
-❌ Not containing sensitive business logic  
-❌ Not exposing API keys or credentials  
-
 ## ✅ What This Tutorial IS
 
 ✅ Educational sample application  
@@ -178,6 +171,16 @@ let mapCmdMsg = function
 ✅ Clean architecture example  
 ✅ Generic, reusable patterns  
 ✅ Foundation for your own apps  
+
+## 🎯 What This Tutorial IS NOT
+
+Things you probably need to add before publishing this application to real users:
+
+- Authentication/authorization  
+- Connected to real backend services  
+- More specific business logic  
+- API keys or credentials  
+- CI/CD pipeline for deploying to e.g. App Center for automated testing
 
 ## 🚀 Quick Start
 
