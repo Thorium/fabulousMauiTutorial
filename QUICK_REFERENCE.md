@@ -240,6 +240,8 @@ match msg with
 - **.NET MAUI**: https://docs.microsoft.com/dotnet/maui/
 - **F# Guide**: https://fsharp.org/
 - **MVU Pattern**: https://guide.elm-lang.org/architecture/
+- **The Elmish Book**: https://zaid-ajaj.github.io/the-elmish-book/
+- **Guidance for .NET systems development**: https://gist.github.com/Thorium/b33dd7c5dd165b76d8517bf2525fe51e
 
 ## 💡 Pro Tips
 
