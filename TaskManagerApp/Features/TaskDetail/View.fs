@@ -129,4 +129,7 @@ module View =
                     })
                         .padding(16.)
                 )
-        )
+        ).toolbarItems() {
+            ToolbarItem("Cancel", GoBack)
+                .order(ToolbarItemOrder.Primary)
+        }

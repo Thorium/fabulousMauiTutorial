@@ -130,4 +130,9 @@ module View =
                         )
                     )
             })
-        )
+        ).toolbarItems() {
+            ToolbarItem("Add", AddNewTask)
+                .order(ToolbarItemOrder.Primary)
+            ToolbarItem("Refresh", RefreshTasks)
+                .order(ToolbarItemOrder.Secondary)
+        }
