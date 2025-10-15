@@ -203,8 +203,10 @@ dotnet build -t:Run -f net8.0-ios
 ### External Resources
 - [Fabulous Documentation](https://docs.fabulous.dev/)
 - [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
+- [The Elmish Book](https://zaid-ajaj.github.io/the-elmish-book/)
 - [F# for Fun and Profit](https://fsharpforfunandprofit.com/)
 - [MVU Architecture Guide](https://guide.elm-lang.org/architecture/)
+- [Guidance for .NET systems development](https://gist.github.com/Thorium/b33dd7c5dd165b76d8517bf2525fe51e)
 
 ### Related Topics
 - Reactive programming with F#
