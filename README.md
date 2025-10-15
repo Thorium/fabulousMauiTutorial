@@ -370,6 +370,8 @@ dotnet build -t:Run -f net8.0-ios
 - [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
 - [F# Language Guide](https://docs.microsoft.com/dotnet/fsharp/)
 - [MVU Architecture](https://guide.elm-lang.org/architecture/)
+- [The Elmish Book](https://zaid-ajaj.github.io/the-elmish-book/)
+- [Guidance for .NET systems development](https://gist.github.com/Thorium/b33dd7c5dd165b76d8517bf2525fe51e)
 
 ## Conclusion
 
