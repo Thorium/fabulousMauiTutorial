@@ -49,7 +49,7 @@ let getPriorityColor = function
 ### Record Types
 ```fsharp
 // Immutable by default
-type Task = {
+type MTask = {
     Id: TaskId
     Title: string
     Description: string
@@ -90,7 +90,11 @@ let init taskId =
     {
         TaskId = taskId
         Title = ""
-        IsLoading = true
+        Description = ""
+        Priority = float AppSettings.DefaultPriorityValue
+        IsLoading = taskId.IsSome
+        IsSaving = false
+        OriginalTask = None
     }, [ LoadTask taskId ]
 ```
 
@@ -99,26 +103,37 @@ let init taskId =
 let update msg model =
     match msg with
     | TitleChanged text ->
-        // Simple state update
-        { model with Title = text }, [], None
+        // Simple state update with length limit
+        let trimmedText = 
+            if text.Length > AppSettings.MaxTaskTitleLength then
+                text.Substring(0, AppSettings.MaxTaskTitleLength)
+            else text
+        { model with Title = trimmedText }, [], None
     
     | SaveTask ->
-        // Trigger async operation
-        { model with IsSaving = true },
-        [ SaveTaskCmd model ],
-        None
+        // Validate and trigger async save
+        if System.String.IsNullOrWhiteSpace(model.Title) then
+            model, [], None
+        else
+            let priority = Priority.fromInt (int model.Priority)
+            let task =
+                match model.TaskId, model.OriginalTask with
+                | Some taskId, Some original ->
+                    // Preserve completion status and creation date
+                    { Id = taskId; Title = model.Title.Trim()
+                      Description = model.Description.Trim()
+                      Priority = priority
+                      IsCompleted = original.IsCompleted
+                      CreatedAt = original.CreatedAt }
+                | _ ->
+                    Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority
+            { model with IsSaving = true }, [ SaveTaskCmd task ], None
     
-    | TaskSaved (Ok task) ->
+    | TaskSaved taskOpt ->
         // Navigate after success
-        model,
-        [],
-        Some NavigateBack
-    
-    | TaskSaved (Error err) ->
-        // Handle error
-        { model with Error = Some err; IsSaving = false },
-        [],
-        None
+        match taskOpt with
+        | Some _ -> model, [], Some NavigateBack
+        | None -> { model with IsSaving = false }, [], None
 ```
 
 ### Command Mapping
@@ -133,11 +148,15 @@ let mapCmdMsg cmdMsg =
     
     | SaveTaskCmd task ->
         Cmd.ofAsyncMsg (async {
-            try
-                let! result = TaskApi.saveTask task
-                return TaskSaved (Ok result)
-            with ex ->
-                return TaskSaved (Error ex.Message)
+            let! result =
+                // Check if task already exists in store
+                match MockDataStore.getTaskById task.Id with
+                | Some _ -> TaskApi.updateTask task
+                | None -> async {
+                    let! t = TaskApi.saveTask task
+                    return Some t
+                }
+            return TaskSaved result
         })
 ```
 
@@ -305,14 +324,16 @@ let update msg model =
             cmds,
             None
         | Some NavigateBack ->
-            // Handle back navigation
-            let prevPage = List.head model.NavigationStack
-            { model with 
-                CurrentPage = prevPage
-                NavigationStack = List.tail model.NavigationStack
-            },
-            cmds,
-            None
+            match model.NavigationStack with
+            | prevPage :: rest ->
+                { model with 
+                    CurrentPage = prevPage
+                    NavigationStack = rest
+                    TaskDetailModel = None
+                },
+                cmds,
+                None
+            | [] -> model, cmds, None
         | None ->
             { model with FeatureModel = fModel },
             cmds,
@@ -383,7 +404,7 @@ match msg with
 
 ### SkiaSharp Control Wrapper
 ```fsharp
-// C# Control
+// F# SkiaSharp Control
 type SkCustomControl() =
     inherit SKCanvasView()
     

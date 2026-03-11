@@ -149,7 +149,7 @@ Feature Module
 │       └── Execute async operations
 │
 └── View.fs
-    ├── view: Model → (Msg → unit) → ContentPage
+    ├── view: Model → WidgetBuilder<Msg, _>
     │   └── Render UI based on model
     │
     └── helper components
@@ -262,7 +262,7 @@ Feature Module
 ## Custom Control Integration
 
 ```
-C# Layer (SkRadialSlider.cs)
+F# Layer (RadialSlider.fs)
 ┌────────────────────────────────┐
 │ SkiaSharp Canvas View          │
 │  - OnPaintSurface()            │
@@ -305,8 +305,8 @@ View Usage
 Domain Types (Strong Typing)
 ┌────────────────────────────────┐
 │ type TaskId = TaskId of Guid   │
-│ type Priority = Low | Med | Hi │
-│ type Task = { ... }            │
+│ type Priority = Low|Medium|High │
+│ type MTask = { ... }           │
 └────────────┬───────────────────┘
              │
              ↓

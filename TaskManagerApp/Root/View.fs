@@ -26,11 +26,7 @@ module View =
     let app =
         let init' () =
             let model, cmdMsgs = State.init()
-            let navCmd =
-                match model.CurrentPage with
-                | TaskListPage -> Cmd.none
-                | _ -> Cmd.none
-            model, (cmdMsgs |> List.map State.mapCmdMsg) @ [ navCmd ] |> List.head
+            model, cmdMsgs |> List.map State.mapCmdMsg |> Cmd.batch
         
         let update' msg model =
             let model', cmdMsgs, navMsgOpt = State.update msg model
@@ -40,7 +36,7 @@ module View =
                 | Some navMsg -> Cmd.ofMsg navMsg
                 | None -> Cmd.none
             
-            model', (cmdMsgs |> List.map State.mapCmdMsg) @ [ navCmd ] |> List.head
+            model', (cmdMsgs |> List.map State.mapCmdMsg) @ [ navCmd ] |> Cmd.batch
         
         let view' model =
             let navPage =

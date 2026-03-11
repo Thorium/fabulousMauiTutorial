@@ -26,13 +26,13 @@ cd FabulousMauiTutorial/TaskManagerApp
 dotnet restore
 
 # Build for Android
-dotnet build -f net8.0-android
+dotnet build -f net9.0-android
 
 # Run on Android
-dotnet build -t:Run -f net8.0-android
+dotnet build -t:Run -f net9.0-android
 
 # Build for iOS (macOS only)
-dotnet build -f net8.0-ios
+dotnet build -f net9.0-ios
 ```
 
 ## 📂 Key Files to Study
@@ -144,7 +144,7 @@ else
 6. Wire up in Root
 
 ### Create Custom Control
-1. Create C# control (SkiaSharp)
+1. Create F# control (SkiaSharp)
 2. Add F# wrapper with events
 3. Register widget
 4. Add builder methods
@@ -267,7 +267,7 @@ match msg with
 
 ### View Function
 ```fsharp
-Model → (Msg → unit) → ContentPage
+Model → WidgetBuilder<Msg, _>
 ```
 
 ### Command

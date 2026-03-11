@@ -88,7 +88,7 @@ FabulousMauiTutorial/
 ## 📊 Statistics
 
 - **Total Lines**: ~3,600+ lines of code and documentation
-- **F# Source Files**: 17 files
+- **F# Source Files**: 16 files
 - **Documentation Files**: 6 comprehensive guides
 - **Features**: 2 complete features with MVU pattern
 - **Custom Controls**: 1 (Radial Slider with SkiaSharp)
@@ -135,10 +135,10 @@ cd FabulousMauiTutorial/TaskManagerApp
 dotnet restore
 
 # Run on Android
-dotnet build -t:Run -f net8.0-android
+dotnet build -t:Run -f net9.0-android
 
 # Run on iOS (macOS only)
-dotnet build -t:Run -f net8.0-ios
+dotnet build -t:Run -f net9.0-ios
 ```
 
 ### Start Learning
@@ -243,9 +243,9 @@ This tutorial is perfect for:
 
 ## 🛠️ Technologies Demonstrated
 
-- **Fabulous v2.5.0** - Declarative UI framework
-- **.NET MAUI 8.0** - Cross-platform framework
-- **F# 8.0** - Functional programming language
+- **Fabulous.MauiControls 8.0.5** - Declarative UI framework
+- **.NET MAUI 9.0** - Cross-platform framework
+- **F# 9.0** - Functional programming language
 - **SkiaSharp 2.88** - 2D graphics (custom controls)
 - **MVU Pattern** - Elm-inspired architecture
 - **Async/Await** - Asynchronous programming
@@ -316,7 +316,7 @@ This tutorial and sample code are provided as educational material for learning 
 This is a **comprehensive, production-quality tutorial** for learning Fabulous MAUI with F#. It includes:
 
 - 📚 **6 documentation files** (~2,000+ lines)
-- 💻 **17 F# source files** (~1,600+ lines)
+- 💻 **16 F# source files** (~1,600+ lines)
 - 📱 **Complete working app** (Task Manager)
 - 🎨 **Custom controls** (Radial Slider)
 - 🏗️ **Clean architecture** (MVU pattern)

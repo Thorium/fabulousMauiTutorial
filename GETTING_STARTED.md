@@ -443,7 +443,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 9.0.x
       - name: Install MAUI
         run: dotnet workload install maui
       - name: Build

@@ -112,16 +112,16 @@ TaskManagerApp/
 ### 1. MVU Architecture
 ```fsharp
 // Model: Immutable state
-type Model = { Tasks: Task list; Filter: TaskFilter }
+type Model = { Tasks: MTask list; Filter: TaskFilter; IsLoading: bool }
 
 // Update: Pure state transitions
 let update msg model =
     match msg with
-    | AddTask task -> { model with Tasks = task :: model.Tasks }
+    | TasksLoaded tasks -> { model with Tasks = tasks; IsLoading = false }, [], None
 
 // View: Declarative UI
 let view model =
-    ContentPage("Tasks", 
+    ContentPage(
         VStack() {
             for task in model.Tasks do
                 taskItem task
@@ -138,12 +138,10 @@ type Priority = Low | Medium | High    // Discriminated unions
 ### 3. Functional Composition
 ```fsharp
 let getFilteredTasks model =
-    model.Tasks
-    |> List.filter (fun t -> 
-        match model.Filter with
-        | All -> true
-        | Active -> not t.IsCompleted
-        | Completed -> t.IsCompleted)
+    match model.Filter with
+    | All -> model.Tasks
+    | Active -> model.Tasks |> List.filter (fun t -> not t.IsCompleted)
+    | Completed -> model.Tasks |> List.filter (fun t -> t.IsCompleted)
 ```
 
 ### 4. Async Operations
@@ -195,10 +193,10 @@ cd TaskManagerApp
 dotnet restore
 
 # 4. Run on Android
-dotnet build -t:Run -f net8.0-android
+dotnet build -t:Run -f net9.0-android
 
 # Or run on iOS (macOS)
-dotnet build -t:Run -f net8.0-ios
+dotnet build -t:Run -f net9.0-ios
 ```
 
 ## 📖 Further Reading

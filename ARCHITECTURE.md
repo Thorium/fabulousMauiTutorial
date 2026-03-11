@@ -154,6 +154,7 @@ let update msg model =
             { model with
                 CurrentPage = prevPage
                 NavigationStack = rest
+                TaskDetailModel = None
             }, [], None
         | [] -> model, [], None
 ```
@@ -172,16 +173,19 @@ Example:
 let update msg model =
     match msg with
     | TaskClicked taskId ->
-        model, [], Some (NavigateToDetail taskId)
+        model, [], Some (NavigateToTaskDetail taskId)
 
 // In Root
 let update msg model =
     match msg with
     | TaskListMsg tlMsg ->
-        let model', cmds, navOpt = TaskList.update tlMsg model.TaskListModel
+        let taskListModel, cmds, navOpt = TaskList.State.update tlMsg model.TaskListModel
+        let model' = { model with TaskListModel = taskListModel }
         match navOpt with
-        | Some (NavigateToDetail id) ->
-            model', cmds, Some (NavigateTo (TaskDetailPage id))
+        | Some (TaskList.NavigateToTaskDetail taskId) ->
+            model', cmds, Some (NavigateTo (TaskDetailPage (Some taskId)))
+        | Some TaskList.NavigateToNewTask ->
+            model', cmds, Some (NavigateTo (TaskDetailPage None))
         | None ->
             model', cmds, None
 ```
@@ -194,7 +198,7 @@ The sample uses an in-memory store to simulate a backend:
 
 ```fsharp
 module MockDataStore =
-    let private tasks = ResizeArray<Task>()
+    let private tasks = ResizeArray<MTask>()
     
     let getAllTasks() = tasks |> Seq.toList
     let addTask task = tasks.Add(task); task
@@ -220,18 +224,18 @@ module TaskApi =
 
 ## Custom Controls
 
-### Integrating C# Controls
+### Integrating Custom Controls
 
-The RadialSlider demonstrates integrating SkiaSharp controls:
+The RadialSlider demonstrates integrating SkiaSharp controls (all in F#):
 
-1. **C# Control** (`SkRadialSlider`):
+1. **F# SkiaSharp Control** (`SkRadialSlider` in `RadialSlider.fs`):
    - Inherits from `SKCanvasView`
    - Implements touch handling and rendering
    - Defines bindable properties
 
-2. **F# Wrapper** (`CustomRadialSlider`):
-   - Wraps the C# control
-   - Exposes events for Fabulous
+2. **F# Wrapper** (`CustomRadialSlider` in `RadialSlider.fs`):
+   - Wraps the SkiaSharp control
+   - Exposes CLIEvent for Fabulous
 
 3. **Fabulous Bindings**:
    - Widget registration
@@ -379,8 +383,13 @@ type TaskListModel = {
 }
 
 type TaskDetailModel = {
-    Task: Task
-    IsEditing: bool
+    TaskId: TaskId option
+    Title: string
+    Description: string
+    Priority: float
+    IsLoading: bool
+    IsSaving: bool
+    OriginalTask: MTask option
 }
 
 // Bad: Everything in one model

@@ -14,6 +14,7 @@ module State =
             Priority = float AppSettings.DefaultPriorityValue
             IsLoading = taskId.IsSome
             IsSaving = false
+            OriginalTask = None
         }, [ LoadTask taskId ]
     
     /// Update the task detail state based on messages
@@ -28,6 +29,7 @@ module State =
                         Description = task.Description
                         Priority = float (Priority.toInt task.Priority)
                         IsLoading = false
+                        OriginalTask = Some task
                 }, [], None
             | None ->
                 { model with IsLoading = false }, [], None
@@ -57,18 +59,18 @@ module State =
             else
                 let priority = Priority.fromInt (int model.Priority)
                 let task =
-                    match model.TaskId with
-                    | Some taskId ->
-                        // Update existing task
+                    match model.TaskId, model.OriginalTask with
+                    | Some taskId, Some original ->
+                        // Update existing task, preserving completion status and creation date
                         {
                             Id = taskId
                             Title = model.Title.Trim()
                             Description = model.Description.Trim()
                             Priority = priority
-                            IsCompleted = false // Keep existing completion status
-                            CreatedAt = System.DateTime.Now // Will be preserved in real implementation
+                            IsCompleted = original.IsCompleted
+                            CreatedAt = original.CreatedAt
                         }
-                    | None ->
+                    | _ ->
                         // Create new task
                         Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority
                 
@@ -100,16 +102,18 @@ module State =
         | SaveTaskCmd task ->
             Cmd.ofAsyncMsg (async {
                 let! result =
-                    match task.Id with
-                    | _ when task.CreatedAt = System.DateTime.MinValue ->
+                    // Use TaskApi.updateTask for existing tasks, saveTask for new ones.
+                    // An existing task will have a matching entry in the store.
+                    match MockDataStore.getTaskById task.Id with
+                    | Some _ ->
+                        // Existing task
+                        TaskApi.updateTask task
+                    | None ->
                         async {
                             // New task
                             let! t = TaskApi.saveTask task
                             return Some t
                         }
-                    | _ ->
-                        // Existing task
-                        TaskApi.updateTask task
                 
                 return TaskSaved result
             })

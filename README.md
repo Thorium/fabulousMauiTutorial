@@ -60,9 +60,9 @@ The Model represents the application state. It's an immutable data structure tha
 
 ```fsharp
 type Model = {
-    Tasks: Task list
-    NewTaskTitle: string
+    Tasks: MTask list
     Filter: TaskFilter
+    IsLoading: bool
 }
 ```
 
@@ -214,38 +214,48 @@ The tutorial includes a custom **Radial Slider** control for selecting task prio
 
 ```fsharp
 RadialSlider(
-    value = model.Priority,
-    onValueChanged = (fun args -> PriorityChanged (int args.NewValue))
+    model.Priority,
+    fun args -> PriorityChanged args.NewValue
 )
     .minimum(0.0)
     .maximum(10.0)
     .trackColor(Colors.LightGray)
     .trackProgressColor(Colors.Blue)
-    .knobColor(Colors.DarkBlue)
+    .knobColor(Colors.White)
 ```
 
 ### Custom Control Implementation
 
-The radial slider is implemented in C# using SkiaSharp and wrapped with Fabulous bindings:
+The radial slider is implemented in F# using SkiaSharp and wrapped with Fabulous bindings:
 
-1. **C# Control** (`SkRadialSlider.cs`): Core rendering and touch handling
-2. **F# Wrapper** (`RadialSlider.fs`): Fabulous widget bindings
+1. **F# SkiaSharp Control** (`SkRadialSlider` in `RadialSlider.fs`): Core rendering and touch handling
+2. **F# Wrapper** (`CustomRadialSlider` in `RadialSlider.fs`): CLIEvent bridge for Fabulous
+3. **Fabulous Bindings** (`RadialSliderBuilder` in `RadialSlider.fs`): Declarative widget integration
 
 ## Navigation
 
 The sample app demonstrates navigation between pages:
 
 ```fsharp
-// Push a new page
-let navigate toPage model =
-    { model with CurrentPage = toPage }, []
+// Navigation is managed in the Root update function, returning 3-tuples:
+// (Model, CmdMsg list, Msg option)
+let update msg model =
+    match msg with
+    | NavigateTo page ->
+        { model with
+            CurrentPage = page
+            NavigationStack = model.CurrentPage :: model.NavigationStack
+        }, [], None
 
-// Pop back
-let goBack model =
-    match model.NavigationStack with
-    | [] -> model, []
-    | prevPage :: rest ->
-        { model with CurrentPage = prevPage; NavigationStack = rest }, []
+    | NavigateBack ->
+        match model.NavigationStack with
+        | [] -> model, [], None
+        | prevPage :: rest ->
+            { model with
+                CurrentPage = prevPage
+                NavigationStack = rest
+                TaskDetailModel = None
+            }, [], None
 ```
 
 Navigation is handled through the MVU pattern by updating the model state.
@@ -277,16 +287,29 @@ let update msg model =
 Handle side effects (API calls, storage) using commands.
 
 ```fsharp
+// CmdMsg defines side-effect commands; Msg handles their results
 type CmdMsg =
     | LoadTasks
-    | TasksLoaded of Task list
+    | ToggleCompletion of TaskId
+    | DeleteTaskCmd of TaskId
 
-let mapCmd = function
-    | LoadTasks -> Cmd.ofAsyncMsg (async {
-        let! tasks = DataStore.loadTasks()
-        return TasksLoaded tasks
-    })
-    | TasksLoaded tasks -> Cmd.none
+let mapCmdMsg = function
+    | LoadTasks ->
+        Cmd.ofAsyncMsg (async {
+            let! tasks = TaskApi.loadTasks()
+            return TasksLoaded tasks
+        })
+    | ToggleCompletion taskId ->
+        Cmd.ofAsyncMsg (async {
+            let! result = TaskApi.toggleTaskCompletion taskId
+            return TaskUpdated result
+        })
+    | DeleteTaskCmd taskId ->
+        Cmd.ofAsyncMsg (async {
+            let! _ = TaskApi.deleteTask taskId
+            let! tasks = TaskApi.loadTasks()
+            return TasksLoaded tasks
+        })
 ```
 
 ### 4. Organize by Feature
@@ -325,11 +348,13 @@ type Priority =
     | Medium 
     | High
 
-type Task = {
+type MTask = {
     Id: TaskId
     Title: string
+    Description: string
     Priority: Priority
     IsCompleted: bool
+    CreatedAt: DateTime
 }
 ```
 
@@ -349,12 +374,12 @@ dotnet restore
 
 3. Run on Android:
 ```bash
-dotnet build -t:Run -f net8.0-android
+dotnet build -t:Run -f net9.0-android
 ```
 
 4. Run on iOS (macOS only):
 ```bash
-dotnet build -t:Run -f net8.0-ios
+dotnet build -t:Run -f net9.0-ios
 ```
 
 ## 📚 Additional Documentation

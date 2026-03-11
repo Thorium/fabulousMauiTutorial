@@ -25,6 +25,7 @@ type Model = {
     Priority: float
     IsLoading: bool
     IsSaving: bool
+    OriginalTask: MTask option
 }
 
 /// Navigation events
