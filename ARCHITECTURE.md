@@ -15,6 +15,10 @@ The MVU architecture is a functional pattern for building UIs with the following
 3. **Pure Functions**: View and Update functions are pure (no side effects)
 4. **Predictability**: Same input always produces the same output
 
+(One deliberate exception in this sample: `Root.State.init` calls
+`MockDataStore.initialize()` directly to seed the in-memory store. In a real app
+that seeding would live behind a command like everything else.)
+
 ### Architecture Layers
 
 ```
@@ -35,7 +39,8 @@ The MVU architecture is a functional pattern for building UIs with the following
                       ↓
 ┌─────────────────────────────────────────────┐
 │              Update Function                │
-│  (Pure function: Msg → Model → Model)       │
+│  (Pure: Msg → Model →                       │
+│     Model × CmdMsg list × NavMsg option)    │
 └─────────────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────┐
@@ -104,7 +109,7 @@ let update msg model =
 let mapCmdMsg cmdMsg =
     match cmdMsg with
     | LoadData ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! data = Api.loadData()
             return DataLoaded data
         })
@@ -247,7 +252,13 @@ type IRadialSlider = inherit IFabView
 
 module RadialSlider =
     let WidgetKey = Widgets.register<CustomRadialSlider>()
-    let ValueChanged = Attributes.defineBindableWithEvent (...)
+
+    // Reuse the control's own property instance (exposed as a static member)
+    let ValueChanged =
+        Attributes.Mvu.defineBindableWithEvent
+            "RadialSlider_ValueProperty"
+            SkRadialSlider.ValueProperty
+            (fun target -> (target :?> CustomRadialSlider).ValueChanged)
 
 [<AutoOpen>]
 module RadialSliderBuilder =
@@ -258,6 +269,12 @@ module RadialSliderBuilder =
                 RadialSlider.ValueChanged.WithValue(...)
             )
 ```
+
+**Pitfall**: the attribute definitions must reference the *same* `BindableProperty`
+instances the control uses internally. `BindableObject` stores values per property
+instance, not per name — a second `BindableProperty.Create` with the same name
+compiles and even raises `OnPropertyChanged`, but the control keeps reading its own
+untouched property and silently sees only default values.
 
 ## State Management Best Practices
 
@@ -303,7 +320,7 @@ type Msg =
 
 let mapCmdMsg = function
     | LoadData ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             try
                 let! data = Api.loadData()
                 return DataLoaded (Ok data)
@@ -367,7 +384,7 @@ let update msg model =
     match msg with
     | ComplexAction ->
         model,
-        [ Cmd1; Cmd2; Cmd3 ],  // All execute in parallel
+        [ Cmd1; Cmd2; Cmd3 ],  // All started together; async results arrive in any order
         None
 ```
 
@@ -428,7 +445,9 @@ let ``Save task generates correct command`` () =
     let model = { Title = "Test" }
     let _, cmds, _ = update SaveTask model
     
-    Assert.IsTrue(List.contains (SaveTaskCmd _) cmds)
+    match cmds with
+    | [ SaveTaskCmd (task, _) ] -> Assert.AreEqual("Test", task.Title)
+    | _ -> Assert.Fail "expected exactly one save command"
 ```
 
 ### 3. Navigation Testing
@@ -511,7 +530,7 @@ let update msg model =
 
 To use real backend:
 
-1. Replace `MockDataStore` with HTTP client:
+1. Replace the `TaskApi` implementation (which currently wraps `MockDataStore`) with HTTP calls:
 ```fsharp
 module TaskApi =
     let httpClient = new HttpClient()
@@ -533,7 +552,7 @@ type Container = {
 let mapCmdMsg container cmdMsg =
     match cmdMsg with
     | LoadTasks ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! token = container.Auth.getToken()
             let! tasks = container.Api.loadTasks(token)
             return TasksLoaded tasks

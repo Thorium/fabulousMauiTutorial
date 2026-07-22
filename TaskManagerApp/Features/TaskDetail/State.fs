@@ -58,7 +58,7 @@ module State =
                 model, [], None
             else
                 let priority = Priority.fromInt (int model.Priority)
-                let task =
+                let task, isUpdate =
                     match model.TaskId, model.OriginalTask with
                     | Some taskId, Some original ->
                         // Update existing task, preserving completion status and creation date
@@ -69,12 +69,12 @@ module State =
                             Priority = priority
                             IsCompleted = original.IsCompleted
                             CreatedAt = original.CreatedAt
-                        }
+                        }, true
                     | _ ->
                         // Create new task
-                        Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority
-                
-                { model with IsSaving = true }, [ SaveTaskCmd task ], None
+                        Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority, false
+
+                { model with IsSaving = true }, [ SaveTaskCmd (task, isUpdate) ], None
         
         | TaskSaved taskOpt ->
             match taskOpt with
@@ -92,28 +92,25 @@ module State =
         | LoadTask taskIdOpt ->
             match taskIdOpt with
             | Some taskId ->
-                Cmd.ofAsyncMsg (async {
+                Cmd.OfAsync.msg (async {
                     let! task = TaskApi.loadTask taskId
                     return TaskLoaded task
                 })
             | None ->
                 Cmd.ofMsg (TaskLoaded None)
         
-        | SaveTaskCmd task ->
-            Cmd.ofAsyncMsg (async {
+        | SaveTaskCmd (task, isUpdate) ->
+            Cmd.OfAsync.msg (async {
                 let! result =
-                    // Use TaskApi.updateTask for existing tasks, saveTask for new ones.
-                    // An existing task will have a matching entry in the store.
-                    match MockDataStore.getTaskById task.Id with
-                    | Some _ ->
-                        // Existing task
+                    // The update function already decided new-vs-existing from the model,
+                    // so the command only talks to the API layer.
+                    if isUpdate then
                         TaskApi.updateTask task
-                    | None ->
+                    else
                         async {
-                            // New task
                             let! t = TaskApi.saveTask task
                             return Some t
                         }
-                
+
                 return TaskSaved result
             })

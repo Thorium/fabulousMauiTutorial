@@ -37,6 +37,25 @@ Important notes about:
 - CI/CD considerations
 - Alternative build methods
 
+### 5. [CODE_EXAMPLES.md](CODE_EXAMPLES.md) - Code Patterns
+Common patterns and snippets:
+- Domain modeling, MVU, UI components
+- Navigation and data operations
+- Custom control integration
+
+### 6. [DIAGRAMS.md](DIAGRAMS.md) - Visual Architecture
+ASCII diagrams of the MVU data flow, navigation, and control integration.
+
+### 7. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Cheat Sheet
+One-page quick reference: commands, key files, patterns, troubleshooting.
+
+### 8. [SUMMARY.md](SUMMARY.md) - Project Overview
+High-level summary of everything included.
+
+### Bonus: [test.fsx](test.fsx) - Logic Smoke Tests
+Runnable tests for the domain and state logic — `dotnet fsi test.fsx`,
+no MAUI workload or emulator required.
+
 ## 📱 Sample Application
 
 ### Task Manager App
@@ -148,7 +167,7 @@ let getFilteredTasks model =
 ```fsharp
 let mapCmdMsg = function
     | LoadTasks ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! tasks = TaskApi.loadTasks()
             return TasksLoaded tasks
         })
@@ -193,10 +212,10 @@ cd TaskManagerApp
 dotnet restore
 
 # 4. Run on Android
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 
 # Or run on iOS (macOS)
-dotnet build -t:Run -f net9.0-ios
+dotnet build -t:Run -f net10.0-ios
 ```
 
 ## 📖 Further Reading

@@ -31,13 +31,13 @@ Fabulous MAUI is a declarative UI framework for building cross-platform mobile a
 - **MVU Architecture**: Clear separation of concerns with unidirectional data flow
 - **Type Safety**: Leverage F#'s strong type system
 - **Cross-Platform**: Write once, run on iOS, Android, macOS, and Windows
-- **Hot Reload**: Fast development iteration
+- **Testable**: Pure update functions can be tested in plain F# scripts, no emulator needed (see [test.fsx](test.fsx))
 
 ## Getting Started
 
 ### Prerequisites
 
-- .NET 9.0 SDK or later
+- .NET 10.0 SDK or later
 - Visual Studio 2022 (Windows/Mac) or JetBrains Rider
 - For iOS development: macOS with Xcode
 - For Android development: Android SDK
@@ -50,6 +50,11 @@ dotnet workload install maui
 ```
 
 2. Create a new F# MAUI project or use the sample provided in this tutorial.
+
+> **Note on versions:** the sample targets .NET 10 / MAUI 10. The matching
+> Fabulous package line (`Fabulous.MauiControls` 9.x, which supports MAUI 9+)
+> is currently published as a prerelease, so the project references
+> `9.0.0-pre9` explicitly.
 
 ## MVU Architecture
 
@@ -163,12 +168,12 @@ Fabulous MAUI provides builders for all standard MAUI controls:
 ```fsharp
 // Labels
 Label("Hello, World!")
-    .fontSize(24.0)
+    .font(size = 24.0)
     .textColor(Colors.Blue)
 
 // Buttons
 Button("Click Me", OnButtonClicked)
-    .backgroundColor(Colors.Green)
+    .background(SolidColorBrush(Colors.Green))
 
 // Text Input
 Entry(model.Text, TextChanged)
@@ -231,6 +236,14 @@ The radial slider is implemented in F# using SkiaSharp and wrapped with Fabulous
 1. **F# SkiaSharp Control** (`SkRadialSlider` in `RadialSlider.fs`): Core rendering and touch handling
 2. **F# Wrapper** (`CustomRadialSlider` in `RadialSlider.fs`): CLIEvent bridge for Fabulous
 3. **Fabulous Bindings** (`RadialSliderBuilder` in `RadialSlider.fs`): Declarative widget integration
+
+> **Pitfall — reuse the control's `BindableProperty` instances.** When defining the
+> Fabulous attributes, pass the *same* `BindableProperty` objects the control itself
+> uses (exposed as `SkRadialSlider.ValueProperty` etc.). `BindableObject` stores
+> values per property *instance*, not per name — if you call
+> `BindableProperty.Create` again with the same name, everything compiles and
+> `OnPropertyChanged` even fires, but the values land in a slot the control never
+> reads, so modifiers like `.knobColor(...)` silently do nothing.
 
 ## Navigation
 
@@ -295,17 +308,17 @@ type CmdMsg =
 
 let mapCmdMsg = function
     | LoadTasks ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! tasks = TaskApi.loadTasks()
             return TasksLoaded tasks
         })
     | ToggleCompletion taskId ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! result = TaskApi.toggleTaskCompletion taskId
             return TaskUpdated result
         })
     | DeleteTaskCmd taskId ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! _ = TaskApi.deleteTask taskId
             let! tasks = TaskApi.loadTasks()
             return TasksLoaded tasks
@@ -328,14 +341,14 @@ Use composition and higher-order functions instead of inheritance.
 
 ```fsharp
 let taskCard task onToggle =
-    Border() {
+    Border(
         HStack() {
             Label(task.Title)
             CheckBox(task.IsCompleted, onToggle)
         }
-    }
-    .stroke(Colors.Gray)
-    .padding(10.0)
+    )
+        .stroke(Colors.Gray)
+        .padding(10.0)
 ```
 
 ### 6. Type Safety
@@ -374,12 +387,17 @@ dotnet restore
 
 3. Run on Android:
 ```bash
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 ```
 
-4. Run on iOS (macOS only):
+4. Run on iOS (macOS only — the `net10.0-ios` target framework is enabled automatically when building on macOS):
 ```bash
-dotnet build -t:Run -f net9.0-ios
+dotnet build -t:Run -f net10.0-ios
+```
+
+5. Run the logic smoke tests (no MAUI or emulator needed):
+```bash
+dotnet fsi test.fsx
 ```
 
 ## 📚 Additional Documentation
@@ -388,6 +406,11 @@ dotnet build -t:Run -f net9.0-ios
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Detailed setup and build instructions
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep architectural insights
 - **[BUILD_NOTES.md](BUILD_NOTES.md)** - Build requirements and troubleshooting
+- **[CODE_EXAMPLES.md](CODE_EXAMPLES.md)** - Code patterns and snippets
+- **[DIAGRAMS.md](DIAGRAMS.md)** - Visual architecture diagrams
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - One-page cheat sheet
+- **[SUMMARY.md](SUMMARY.md)** - Project overview
+- **[test.fsx](test.fsx)** - Runnable logic smoke tests (`dotnet fsi test.fsx`)
 
 ## Additional Resources
 

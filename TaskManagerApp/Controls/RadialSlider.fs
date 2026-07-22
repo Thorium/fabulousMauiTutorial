@@ -97,7 +97,19 @@ type SkRadialSlider() =
     member this.Value
         with get() = this.GetValue(valueProperty) :?> float
         and set(value: float) = this.SetValue(valueProperty, value)
-    
+
+    // Expose the property instances so the Fabulous attributes below can reuse them.
+    // BindableObject stores values per BindableProperty *instance*, not per name:
+    // creating a second property with the same name would leave the control reading defaults.
+    static member TrackColorProperty = trackColorProperty
+    static member KnobColorProperty = knobColorProperty
+    static member TrackProgressColorProperty = trackProgressColorProperty
+    static member StartProperty = startProperty
+    static member ArcProperty = arcProperty
+    static member MinimumProperty = minimumProperty
+    static member MaximumProperty = maximumProperty
+    static member ValueProperty = valueProperty
+
     member private this.RecalculateProgress() =
         progress <- (this.Value - this.Minimum) / (this.Maximum - this.Minimum)
         progressArc <- this.Arc * progress
@@ -175,7 +187,14 @@ type SkRadialSlider() =
         
         // Draw knob
         canvas.DrawCircle(px, py, 20.0f, knobPaint)
-    
+
+    // The SKPaints are owned by this control, so it owns their disposal too.
+    interface IDisposable with
+        member _.Dispose() =
+            progressPaint.Dispose()
+            knobPaint.Dispose()
+            trackPaint.Dispose()
+
 
 /// F# wrapper for Fabulous integration
 type CustomRadialSlider() =
@@ -198,28 +217,33 @@ type IRadialSlider =
 
 module RadialSlider =
     let WidgetKey = Widgets.register<CustomRadialSlider>()
-    
-    let TrackColor = Attributes.defineBindableColor (BindableProperty.Create("TrackColor", typeof<Color>, typeof<SkRadialSlider>, Colors.LightGray))
-    let KnobColor = Attributes.defineBindableColor (BindableProperty.Create("KnobColor", typeof<Color>, typeof<SkRadialSlider>, Colors.Blue))
-    let TrackProgressColor = Attributes.defineBindableColor (BindableProperty.Create("TrackProgressColor", typeof<Color>, typeof<SkRadialSlider>, Colors.Blue))
-    let Start = Attributes.defineBindableFloat (BindableProperty.Create("Start", typeof<float>, typeof<SkRadialSlider>, 135.0))
-    let Arc = Attributes.defineBindableFloat (BindableProperty.Create("Arc", typeof<float>, typeof<SkRadialSlider>, 270.0))
-    let Minimum = Attributes.defineBindableFloat (BindableProperty.Create("Minimum", typeof<float>, typeof<SkRadialSlider>, 0.0))
-    let Maximum = Attributes.defineBindableFloat (BindableProperty.Create("Maximum", typeof<float>, typeof<SkRadialSlider>, 10.0))
-    
+
+    // IMPORTANT: reuse the control's own BindableProperty instances.
+    // Creating new ones with BindableProperty.Create here would compile and even raise
+    // OnPropertyChanged (names match), but the values would be stored in separate slots
+    // that the control never reads — colors and the initial Value would silently stay
+    // at their defaults.
+    let TrackColor = Attributes.defineBindableColor SkRadialSlider.TrackColorProperty
+    let KnobColor = Attributes.defineBindableColor SkRadialSlider.KnobColorProperty
+    let TrackProgressColor = Attributes.defineBindableColor SkRadialSlider.TrackProgressColorProperty
+    let Start = Attributes.defineBindableFloat SkRadialSlider.StartProperty
+    let Arc = Attributes.defineBindableFloat SkRadialSlider.ArcProperty
+    let Minimum = Attributes.defineBindableFloat SkRadialSlider.MinimumProperty
+    let Maximum = Attributes.defineBindableFloat SkRadialSlider.MaximumProperty
+
     let ValueChanged =
-        Attributes.defineBindableWithEvent
+        Attributes.Mvu.defineBindableWithEvent
             "RadialSlider_ValueProperty"
-            (BindableProperty.Create("Value", typeof<float>, typeof<CustomRadialSlider>, 5.0, BindingMode.TwoWay))
+            SkRadialSlider.ValueProperty
             (fun target -> (target :?> CustomRadialSlider).ValueChanged)
 
 [<AutoOpen>]
 module RadialSliderBuilder =
     type Fabulous.Maui.View with
-        static member inline RadialSlider(value: float, onValueChanged: ValueChangedEventArgs -> obj) =
+        static member inline RadialSlider(value: float, onValueChanged: ValueChangedEventArgs -> 'msg) =
             WidgetBuilder<'msg, IRadialSlider>(
                 RadialSlider.WidgetKey,
-                RadialSlider.ValueChanged.WithValue(ValueEventData.create value onValueChanged)
+                RadialSlider.ValueChanged.WithValue(MsgValueEventData.create value onValueChanged)
             )
 
 type RadialSliderModifiers =
@@ -242,3 +266,13 @@ type RadialSliderModifiers =
     [<Extension>]
     static member inline maximum(this: WidgetBuilder<'msg, IRadialSlider>, value: float) =
         this.AddScalar(RadialSlider.Maximum.WithValue(value))
+
+    /// Angle (degrees) where the track starts; default 135.
+    [<Extension>]
+    static member inline start(this: WidgetBuilder<'msg, IRadialSlider>, value: float) =
+        this.AddScalar(RadialSlider.Start.WithValue(value))
+
+    /// Sweep of the track in degrees; default 270.
+    [<Extension>]
+    static member inline arc(this: WidgetBuilder<'msg, IRadialSlider>, value: float) =
+        this.AddScalar(RadialSlider.Arc.WithValue(value))

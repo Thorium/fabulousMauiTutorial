@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net9.0-android</TargetFrameworks>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <!-- iOS can only be built on macOS, so the TFM is added there automatically -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net10.0-ios</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>TaskManagerApp</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -18,8 +20,9 @@
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
 
-    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
-    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <!-- .NET 10 raises the platform minimums: iOS 15, Android API 24 -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,8 +30,8 @@
     <MauiIcon Include="Resources\Images\appicon.svg" ForegroundFile="Resources\Images\appiconfg.svg" Color="#512BD4" />
     <!-- Splash Screen -->
     <MauiSplashScreen Include="Resources\Images\splash.svg" Color="#512BD4" BaseSize="128,128" />
-    <!-- Images -->
-    <MauiImage Include="Resources\Images\*" />
+    <!-- Images (icon and splash are declared above — MAUI 10 errors on duplicates) -->
+    <MauiImage Include="Resources\Images\*" Exclude="Resources\Images\appicon.svg;Resources\Images\appiconfg.svg;Resources\Images\splash.svg" />
     <!-- Fonts -->
     <MauiFont Include="Resources\Fonts\*.ttf" />
   </ItemGroup>
@@ -59,10 +62,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.111" />
-    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.111" />
-    <PackageReference Include="Fabulous.MauiControls" Version="8.0.5" />
-    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="2.88.6" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.80" />
+    <PackageReference Include="Fabulous.MauiControls" Version="9.0.0-pre9" />
+    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="3.119.4" />
   </ItemGroup>
 
 </Project>

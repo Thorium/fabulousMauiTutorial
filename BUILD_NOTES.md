@@ -8,10 +8,10 @@ This sample application requires the .NET MAUI workload to be installed. The MAU
 
 Before building this project on your local machine, ensure you have:
 
-1. **.NET 9.0 SDK** installed
+1. **.NET 10.0 SDK** installed
    ```bash
    dotnet --version
-   # Should show 9.0.x or higher
+   # Should show 10.0.x or higher
    ```
 
 2. **MAUI workload** installed
@@ -20,8 +20,17 @@ Before building this project on your local machine, ensure you have:
    ```
 
 3. **Platform-specific SDKs**:
-   - **For Android**: Android SDK (API 24+)
-   - **For iOS**: Xcode 14+ (macOS only)
+   - **For Android**: Android SDK (API 24+) and Microsoft OpenJDK 17
+   - **For iOS**: Xcode 26+ (macOS only)
+
+Note: `Fabulous.MauiControls` is referenced as a prerelease (`9.0.0-pre9`) — it is
+the Fabulous line that supports MAUI 9/10 (the stable 8.x line only compiles
+against MAUI 8).
+
+Note: the repository contains a `global.json` pinning the .NET SDK to the 10.x band.
+This matters because workloads are installed per SDK band — with another SDK band
+also installed, an unpinned build may resolve to it and fail with NETSDK1147 even
+though the MAUI workload is present under 10.x.
 
 ### Verify Installation
 
@@ -43,21 +52,28 @@ cd FabulousMauiTutorial/TaskManagerApp
 dotnet restore
 
 # Build for Android
-dotnet build -f net9.0-android
+dotnet build -f net10.0-android
 
 # Build for iOS (macOS only)
-dotnet build -f net9.0-ios
+dotnet build -f net10.0-ios
 ```
 
 ### Testing Without Full MAUI
 
-If you want to test the F# code logic without building the full mobile app:
+The repository ships runnable smoke tests in [test.fsx](test.fsx) covering the
+domain logic, the MockDataStore, and all `State.update` functions (127 checks).
+They need no MAUI workload, emulator, or test framework:
 
-1. You can create unit tests for the domain logic
-2. Test the update functions in isolation
-3. Test the data layer (MockData.fs)
+```bash
+dotnet fsi test.fsx
+```
 
-Example test structure:
+Note that `test.fsx` contains a copy of the app's logic modules (an .fsx script
+cannot reference the MAUI project directly), so when you change `Domain.fs`,
+`MockData.fs`, or a `State.fs`, apply the same change in `test.fsx`.
+
+For a real project you would instead put the logic in a plain library project and
+write unit tests against it:
 ```fsharp
 // In a separate test project
 [<Test>]
@@ -76,11 +92,13 @@ For continuous integration:
 
 Example GitHub Actions workflow:
 ```yaml
+# Note: Linux runners only support the maui-android workload;
+# use 'dotnet workload install maui' on Windows/macOS runners.
 - name: Install MAUI Workload
-  run: dotnet workload install maui --skip-manifest-update
-  
+  run: dotnet workload install maui-android --skip-manifest-update
+
 - name: Build Android
-  run: dotnet build -f net9.0-android -c Release
+  run: dotnet build -f net10.0-android -c Release
 ```
 
 ### Troubleshooting

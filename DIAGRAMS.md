@@ -229,7 +229,7 @@ Feature Module
        ↓
 3. mapCmdMsg(LoadTasks)
    │
-   ├─→ Cmd.ofAsyncMsg (async {
+   ├─→ Cmd.OfAsync.msg (async {
    │       let! tasks = TaskApi.loadTasks()
    │       return TasksLoaded tasks
    │   })

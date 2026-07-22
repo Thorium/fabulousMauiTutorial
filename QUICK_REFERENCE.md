@@ -26,13 +26,16 @@ cd FabulousMauiTutorial/TaskManagerApp
 dotnet restore
 
 # Build for Android
-dotnet build -f net9.0-android
+dotnet build -f net10.0-android
 
 # Run on Android
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 
 # Build for iOS (macOS only)
-dotnet build -f net9.0-ios
+dotnet build -f net10.0-ios
+
+# Run logic smoke tests (any OS, no MAUI needed)
+dotnet fsi test.fsx
 ```
 
 ## 📂 Key Files to Study
@@ -100,7 +103,7 @@ type CmdMsg =
 
 let mapCmdMsg = function
     | LoadData ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! data = Api.load()
             return DataLoaded data
         })
@@ -177,25 +180,25 @@ else
 ## 📚 Learning Path
 
 ### Beginner (1-2 days)
-- [x] Read INDEX.md
-- [x] Follow GETTING_STARTED.md
-- [x] Run the sample app
-- [x] Study Domain.fs
-- [x] Understand TaskList feature
+- [ ] Read INDEX.md
+- [ ] Follow GETTING_STARTED.md
+- [ ] Run the sample app
+- [ ] Study Domain.fs
+- [ ] Understand TaskList feature
 
 ### Intermediate (3-5 days)
-- [x] Read ARCHITECTURE.md
-- [x] Study navigation in Root
-- [x] Examine custom controls
-- [x] Add a new feature
-- [x] Modify existing features
+- [ ] Read ARCHITECTURE.md
+- [ ] Study navigation in Root
+- [ ] Examine custom controls
+- [ ] Add a new feature
+- [ ] Modify existing features
 
 ### Advanced (1-2 weeks)
-- [x] Replace mock data with real API
-- [x] Add authentication
-- [x] Implement persistence
-- [x] Optimize performance
-- [x] Deploy to stores
+- [ ] Replace mock data with real API
+- [ ] Add authentication
+- [ ] Implement persistence
+- [ ] Optimize performance
+- [ ] Deploy to stores
 
 ## 🎯 Common Patterns
 
@@ -272,7 +275,7 @@ Model → WidgetBuilder<Msg, _>
 
 ### Command
 ```fsharp
-Cmd.ofAsyncMsg (async { ... })
+Cmd.OfAsync.msg (async { ... })
 ```
 
 ---

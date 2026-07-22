@@ -6,7 +6,7 @@ This guide will help you build and run the Task Manager sample application.
 
 ### Software Requirements
 
-1. **.NET 9.0 SDK or later**
+1. **.NET 10.0 SDK or later**
    - Download from: https://dotnet.microsoft.com/download
    - Verify installation: `dotnet --version`
 
@@ -18,12 +18,12 @@ This guide will help you build and run the Task Manager sample application.
 3. **Platform-Specific Tools**
 
    **For Android Development:**
-   - Android SDK (API level 21 or higher)
+   - Android SDK (API level 24 or higher)
    - Android Emulator or physical device
-   - Java Development Kit (JDK) 11 or later
+   - Microsoft OpenJDK 17 (required by .NET 10 Android builds)
 
    **For iOS Development (macOS only):**
-   - Xcode 14.0 or later
+   - Xcode 26 or later (as required by the installed iOS workload)
    - iOS Simulator or physical device
    - Apple Developer account (for device deployment)
 
@@ -65,12 +65,21 @@ This downloads all required dependencies:
 
 **For Android:**
 ```bash
-dotnet build -f net9.0-android
+dotnet build -f net10.0-android
 ```
 
 **For iOS (macOS only):**
 ```bash
-dotnet build -f net9.0-ios
+dotnet build -f net10.0-ios
+```
+
+Note: the project's `net10.0-ios` target framework is enabled automatically when
+building on macOS (see the condition in `TaskManagerApp.fsproj`); on Windows/Linux
+only `net10.0-android` is available.
+
+**Logic tests (any OS, no MAUI workload needed):**
+```bash
+dotnet fsi test.fsx
 ```
 
 ## Running the Application
@@ -92,16 +101,16 @@ adb.exe has to be in the path.
    sdkmanager --list
    
    # Create emulator
-   avdmanager create avd -n TaskManager -k "system-images;android-33;google_apis;x86_64"
+   avdmanager create avd -n TaskManager -k "system-images;android-36;google_apis;x86_64"
    ```
 
 3. **Run on emulator:**
    ```bash
-   dotnet build -t:Run -f net9.0-android
+   dotnet build -t:Run -f net10.0-android
    ```
 
 This needs to have the emulator set up (Tools -> Android -> Android Device Manager).
-See: https://learn.microsoft.com/en-us/dotnet/maui/android/emulator/troubleshooting?view=net-maui-9.0
+See: https://learn.microsoft.com/en-us/dotnet/maui/android/emulator/troubleshooting?view=net-maui-10.0
 Also if VS2022 runner doesn't work well for you, try starting from command line.
 
 #### Using Physical Device
@@ -110,7 +119,7 @@ Also if VS2022 runner doesn't work well for you, try starting from command line.
 2. Connect device via USB
 3. Run:
    ```bash
-   dotnet build -t:Run -f net9.0-android
+   dotnet build -t:Run -f net10.0-android
    ```
 
 ### iOS (macOS only)
@@ -124,7 +133,7 @@ Also if VS2022 runner doesn't work well for you, try starting from command line.
 
 2. **Run on simulator:**
    ```bash
-   dotnet build -t:Run -f net9.0-ios
+   dotnet build -t:Run -f net10.0-ios
    ```
 
 #### Using Physical Device
@@ -133,7 +142,7 @@ Also if VS2022 runner doesn't work well for you, try starting from command line.
 2. Open Xcode and configure signing
 3. Run:
    ```bash
-   dotnet build -t:Run -f net9.0-ios
+   dotnet build -t:Run -f net10.0-ios
    ```
 
 ## Troubleshooting
@@ -147,8 +156,32 @@ Also if VS2022 runner doesn't work well for you, try starting from command line.
 dotnet workload install maui
 ```
 
+**Error: NETSDK1147 even though the MAUI workload is installed**
+- Workloads are installed per SDK feature band. If another .NET SDK band is also
+  installed, an unpinned `dotnet build` may pick it — and it won't see workloads
+  installed under a different band. The repository's `global.json` pins the SDK to
+  the 10.x band for this reason; if you removed it, restore it or install the
+  workloads for the SDK you actually build with.
+
+**Error: XA5300 "The Android SDK directory could not be found" (command-line builds)**
+- Visual Studio installs the Android SDK but doesn't always expose it to CLI builds.
+- Set the `ANDROID_HOME` environment variable, or pass the path explicitly:
+  ```bash
+  dotnet build -f net10.0-android -p:AndroidSdkDirectory="C:\Program Files (x86)\Android\android-sdk"
+  ```
+- The directory must contain `platform-tools`; install it via the SDK Manager if missing.
+- Alternatively, let the Android SDK provision everything (SDK components *and* the JDK)
+  into user-writable folders — no admin rights needed:
+  ```bash
+  dotnet build -t:InstallAndroidDependencies -f net10.0-android \
+    "-p:AndroidSdkDirectory=$HOME/android-sdk" \
+    "-p:JavaSdkDirectory=$HOME/android-jdk" \
+    -p:AcceptAndroidSDKLicenses=True
+  ```
+  then pass the same `AndroidSdkDirectory`/`JavaSdkDirectory` properties to `dotnet build`.
+
 **Error: "Java SDK not found"**
-- Install JDK 11 or later
+- Install Microsoft OpenJDK 17
 - Set `JAVA_HOME` environment variable
 
 **Error: "Android SDK not found"**
@@ -158,12 +191,12 @@ dotnet workload install maui
 #### 2. Runtime Errors
 
 **App crashes on startup**
-- Check for missing dependencies in `.csproj`
+- Check for missing dependencies in `.fsproj`
 - Verify all F# files are included in compilation order
 - Check platform-specific implementations
 
 **Controls not rendering**
-- Ensure SkiaSharp workload is installed
+- Ensure the `SkiaSharp.Views.Maui.Controls` NuGet package is restored
 - Check `UseSkiaSharp()` is called in MauiProgram
 
 #### 3. Platform-Specific Issues
@@ -180,17 +213,11 @@ dotnet workload install maui
 
 ### Debug Mode
 
-Enable detailed logging:
+Enable detailed logging by running with verbose output:
 
-1. Set environment variable:
-   ```bash
-   export DOTNET_LOGGING_LEVEL=Debug
-   ```
-
-2. Run with verbose output:
-   ```bash
-   dotnet build -t:Run -f net9.0-android -v detailed
-   ```
+```bash
+dotnet build -t:Run -f net10.0-android -v detailed
+```
 
 ### Clean Build
 
@@ -212,14 +239,12 @@ dotnet build
 
 ### Hot Reload
 
-.NET MAUI supports hot reload for rapid iteration:
+.NET hot reload does not support F#, and Fabulous uses code (not XAML), so XAML hot
+reload does not apply either. Expect a rebuild + redeploy cycle for code changes.
 
-1. Start the app in debug mode
-2. Make changes to F# code
-3. Save the file
-4. Changes apply automatically (XAML hot reload)
-
-Note: F# hot reload support is limited compared to C#. Some changes may require app restart.
+To keep iteration fast anyway:
+- Test update/domain logic instantly with `dotnet fsi test.fsx` (no emulator needed)
+- Keep the emulator running between deployments — redeploys are much faster than cold starts
 
 ### Debugging
 
@@ -236,10 +261,10 @@ Note: F# hot reload support is limited compared to C#. Some changes may require 
 #### Command Line
 ```bash
 # Android
-dotnet build -t:Run -f net9.0-android -c Debug
+dotnet build -t:Run -f net10.0-android -c Debug
 
 # iOS
-dotnet build -t:Run -f net9.0-ios -c Debug
+dotnet build -t:Run -f net10.0-ios -c Debug
 ```
 
 ### Live Preview (XAML only)
@@ -372,17 +397,17 @@ dotnet build -c Release
 
 **Android APK:**
 ```bash
-dotnet publish -f net9.0-android -c Release
+dotnet publish -f net10.0-android -c Release
 ```
 
 **Android AAB (for Play Store):**
 ```bash
-dotnet publish -f net9.0-android -c Release -p:AndroidPackageFormat=aab
+dotnet publish -f net10.0-android -c Release -p:AndroidPackageFormat=aab
 ```
 
 **iOS IPA:**
 ```bash
-dotnet publish -f net9.0-ios -c Release
+dotnet publish -f net10.0-ios -c Release
 ```
 
 ## Performance Tips
@@ -413,11 +438,11 @@ dotnet publish -f net9.0-ios -c Release
    keytool -genkey -v -keystore myapp.keystore -alias myapp -keyalg RSA -keysize 2048 -validity 10000
    ```
 
-2. **Configure signing in `.csproj`**
+2. **Configure signing in `.fsproj`**
 
 3. **Build signed APK/AAB:**
    ```bash
-   dotnet publish -f net9.0-android -c Release
+   dotnet publish -f net10.0-android -c Release
    ```
 
 ### iOS
@@ -439,15 +464,17 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
       - name: Install MAUI
-        run: dotnet workload install maui
+        # On Linux runners only maui-android is available;
+        # use 'dotnet workload install maui' on Windows/macOS runners.
+        run: dotnet workload install maui-android
       - name: Build
-        run: dotnet build -f net9.0-android
+        run: dotnet build -f net10.0-android
 ```
 
 ## Conclusion

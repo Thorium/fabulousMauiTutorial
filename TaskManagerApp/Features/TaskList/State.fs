@@ -46,19 +46,19 @@ module State =
     let mapCmdMsg cmdMsg =
         match cmdMsg with
         | LoadTasks ->
-            Cmd.ofAsyncMsg (async {
+            Cmd.OfAsync.msg (async {
                 let! tasks = TaskApi.loadTasks()
                 return TasksLoaded tasks
             })
         
         | ToggleCompletion taskId ->
-            Cmd.ofAsyncMsg (async {
+            Cmd.OfAsync.msg (async {
                 let! result = TaskApi.toggleTaskCompletion taskId
                 return TaskUpdated result
             })
         
         | DeleteTaskCmd taskId ->
-            Cmd.ofAsyncMsg (async {
+            Cmd.OfAsync.msg (async {
                 let! _ = TaskApi.deleteTask taskId
                 let! tasks = TaskApi.loadTasks()
                 return TasksLoaded tasks

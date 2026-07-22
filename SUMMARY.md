@@ -6,7 +6,7 @@ This folder contains a **complete, comprehensive tutorial** on building cross-pl
 
 ## ✨ What's Included
 
-### 📚 Documentation (6 Files)
+### 📚 Documentation (8 Files)
 
 1. **[INDEX.md](INDEX.md)** - Start here! Complete overview and learning path
 2. **[README.md](README.md)** - Main tutorial covering all core concepts
@@ -14,6 +14,10 @@ This folder contains a **complete, comprehensive tutorial** on building cross-pl
 4. **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep dive into MVU architecture
 5. **[BUILD_NOTES.md](BUILD_NOTES.md)** - Build requirements and troubleshooting
 6. **[CODE_EXAMPLES.md](CODE_EXAMPLES.md)** - Comprehensive code patterns and examples
+7. **[DIAGRAMS.md](DIAGRAMS.md)** - Visual architecture diagrams
+8. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - One-page cheat sheet
+
+Plus **[test.fsx](test.fsx)** — runnable logic smoke tests (`dotnet fsi test.fsx`).
 
 ### 📱 Sample Application - Task Manager
 
@@ -24,7 +28,7 @@ A complete, production-quality mobile app demonstrating best practices:
 - ✅ Priority selection with custom radial slider control
 - ✅ Task filtering (All/Active/Completed)
 - ✅ Task completion tracking
-- ✅ In-memory data persistence
+- ✅ In-memory data store (simulating a backend)
 - ✅ Clean MVU architecture
 - ✅ Cross-platform (iOS & Android)
 
@@ -41,13 +45,17 @@ A complete, production-quality mobile app demonstrating best practices:
 ```
 FabulousMauiTutorial/
 │
-├── 📄 Documentation Files (6)
+├── 📄 Documentation Files (8)
 │   ├── INDEX.md                    # Start here - Overview & learning path
 │   ├── README.md                   # Main tutorial
 │   ├── GETTING_STARTED.md         # Setup guide
 │   ├── ARCHITECTURE.md            # Architecture deep dive
 │   ├── BUILD_NOTES.md             # Build requirements
-│   └── CODE_EXAMPLES.md           # Code patterns
+│   ├── CODE_EXAMPLES.md           # Code patterns
+│   ├── DIAGRAMS.md                # Visual architecture diagrams
+│   └── QUICK_REFERENCE.md         # Cheat sheet
+│
+├── 🧪 test.fsx                     # Logic smoke tests (dotnet fsi test.fsx)
 │
 └── 📱 TaskManagerApp/              # Complete sample application
     ├── Domain.fs                   # Core domain models
@@ -87,9 +95,10 @@ FabulousMauiTutorial/
 
 ## 📊 Statistics
 
-- **Total Lines**: ~3,600+ lines of code and documentation
+- **Total Lines**: ~5,000+ lines of code and documentation
 - **F# Source Files**: 16 files
-- **Documentation Files**: 6 comprehensive guides
+- **Documentation Files**: 8 comprehensive guides
+- **Tests**: 127 logic checks in test.fsx
 - **Features**: 2 complete features with MVU pattern
 - **Custom Controls**: 1 (Radial Slider with SkiaSharp)
 
@@ -122,7 +131,7 @@ After completing this tutorial, you will understand:
 
 ### Prerequisites
 ```bash
-# Install .NET 9.0 SDK
+# Install .NET 10.0 SDK
 # Install MAUI workload
 dotnet workload install maui
 ```
@@ -135,10 +144,10 @@ cd FabulousMauiTutorial/TaskManagerApp
 dotnet restore
 
 # Run on Android
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 
 # Run on iOS (macOS only)
-dotnet build -t:Run -f net9.0-ios
+dotnet build -t:Run -f net10.0-ios
 ```
 
 ### Start Learning
@@ -243,10 +252,10 @@ This tutorial is perfect for:
 
 ## 🛠️ Technologies Demonstrated
 
-- **Fabulous.MauiControls 8.0.5** - Declarative UI framework
-- **.NET MAUI 9.0** - Cross-platform framework
-- **F# 9.0** - Functional programming language
-- **SkiaSharp 2.88** - 2D graphics (custom controls)
+- **Fabulous.MauiControls 9.0.0-pre9** - Declarative UI framework (prerelease — the Fabulous line supporting MAUI 9/10)
+- **.NET MAUI 10.0** - Cross-platform framework
+- **F# 10** - Functional programming language
+- **SkiaSharp 3.119** - 2D graphics (custom controls)
 - **MVU Pattern** - Elm-inspired architecture
 - **Async/Await** - Asynchronous programming
 - **Discriminated Unions** - Type-safe state modeling
@@ -315,8 +324,9 @@ This tutorial and sample code are provided as educational material for learning 
 
 This is a **comprehensive, production-quality tutorial** for learning Fabulous MAUI with F#. It includes:
 
-- 📚 **6 documentation files** (~2,000+ lines)
+- 📚 **8 documentation files** (~3,300+ lines)
 - 💻 **16 F# source files** (~1,600+ lines)
+- 🧪 **Runnable smoke tests** (test.fsx, 127 checks)
 - 📱 **Complete working app** (Task Manager)
 - 🎨 **Custom controls** (Radial Slider)
 - 🏗️ **Clean architecture** (MVU pattern)

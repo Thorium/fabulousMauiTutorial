@@ -116,7 +116,7 @@ let update msg model =
             model, [], None
         else
             let priority = Priority.fromInt (int model.Priority)
-            let task =
+            let task, isUpdate =
                 match model.TaskId, model.OriginalTask with
                 | Some taskId, Some original ->
                     // Preserve completion status and creation date
@@ -124,10 +124,10 @@ let update msg model =
                       Description = model.Description.Trim()
                       Priority = priority
                       IsCompleted = original.IsCompleted
-                      CreatedAt = original.CreatedAt }
+                      CreatedAt = original.CreatedAt }, true
                 | _ ->
-                    Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority
-            { model with IsSaving = true }, [ SaveTaskCmd task ], None
+                    Task.createDetailed (model.Title.Trim()) (model.Description.Trim()) priority, false
+            { model with IsSaving = true }, [ SaveTaskCmd (task, isUpdate) ], None
     
     | TaskSaved taskOpt ->
         // Navigate after success
@@ -141,21 +141,23 @@ let update msg model =
 let mapCmdMsg cmdMsg =
     match cmdMsg with
     | LoadTasks ->
-        Cmd.ofAsyncMsg (async {
+        Cmd.OfAsync.msg (async {
             let! tasks = TaskApi.loadTasks()
             return TasksLoaded tasks
         })
     
-    | SaveTaskCmd task ->
-        Cmd.ofAsyncMsg (async {
+    | SaveTaskCmd (task, isUpdate) ->
+        Cmd.OfAsync.msg (async {
             let! result =
-                // Check if task already exists in store
-                match MockDataStore.getTaskById task.Id with
-                | Some _ -> TaskApi.updateTask task
-                | None -> async {
-                    let! t = TaskApi.saveTask task
-                    return Some t
-                }
+                // The update function already decided new-vs-existing,
+                // so the command only talks to the API layer
+                if isUpdate then
+                    TaskApi.updateTask task
+                else
+                    async {
+                        let! t = TaskApi.saveTask task
+                        return Some t
+                    }
             return TaskSaved result
         })
 ```
@@ -173,7 +175,7 @@ VStack(spacing = 16.) {
         .placeholder("Enter text...")
     
     Button("Submit", Submit)
-        .backgroundColor(Colors.Blue)
+        .background(SolidColorBrush(Colors.Blue))
 }
 
 // Horizontal stack
@@ -186,19 +188,26 @@ HStack(spacing = 8.) {
 
 ### Conditional Rendering
 ```fsharp
-// Using if-then-else
+// Using if-then-else. The branches must all produce the same widget type,
+// so wrap them in ContentView when they differ (as TaskList/View.fs does):
 if model.IsLoading then
-    ActivityIndicator(true)
-        .color(Colors.Blue)
+    ContentView(
+        ActivityIndicator(true)
+            .color(Colors.Blue)
+    )
 elif model.Tasks.IsEmpty then
-    Label("No tasks found")
-        .textColor(Colors.Gray)
+    ContentView(
+        Label("No tasks found")
+            .textColor(Colors.Gray)
+    )
 else
-    ScrollView(
-        VStack() {
-            for task in model.Tasks do
-                taskItem task
-        }
+    ContentView(
+        ScrollView(
+            VStack() {
+                for task in model.Tasks do
+                    taskItem task
+            }
+        )
     )
 ```
 
@@ -207,9 +216,7 @@ else
 // Iterate over list
 VStack(spacing = 8.) {
     for task in model.Tasks do
-        (Border() {
-            Label(task.Title)
-        })
+        Border(Label(task.Title))
             .stroke(Colors.Gray)
             .padding(12.)
 }
@@ -263,24 +270,21 @@ Grid(
 // Reusable component
 let primaryButton text onClicked =
     Button(text, onClicked)
-        .backgroundColor(Colors.Blue)
+        .background(SolidColorBrush(Colors.Blue))
         .textColor(Colors.White)
-        .cornerRadius(8.)
-        .padding(16., 8.)
-        .minWidth(120.)
+        .cornerRadius(8)
+        .padding(16.)
+        .minimumWidth(120.)
 
 // Usage
 primaryButton "Save" SaveTask
 
 // Card component
 let card content =
-    (Border() {
-        content
-    })
+    Border(content)
         .stroke(Colors.LightGray)
         .strokeThickness(1.)
-        .background(Colors.White)
-        .cornerRadius(8.)
+        .background(SolidColorBrush(Colors.White))
         .padding(16.)
         .margin(8.)
 ```
@@ -384,7 +388,7 @@ module Api =
 ### Error Handling
 ```fsharp
 let loadDataCmd() =
-    Cmd.ofAsyncMsg (async {
+    Cmd.OfAsync.msg (async {
         try
             let! data = Api.loadData()
             return DataLoaded (Ok data)
@@ -410,6 +414,9 @@ type SkCustomControl() =
     
     static let valueProperty = 
         BindableProperty.Create("Value", typeof<float>, typeof<SkCustomControl>, 0.0)
+    
+    // Expose the property instance so the Fabulous attribute can reuse it
+    static member ValueProperty = valueProperty
     
     member this.Value
         with get() = this.GetValue(valueProperty) :?> float
@@ -443,10 +450,14 @@ type ICustomControl = inherit IFabView
 module CustomControl =
     let WidgetKey = Widgets.register<CustomControl>()
     
+    // IMPORTANT: pass the control's own property instance, never a fresh
+    // BindableProperty.Create with the same name. BindableObject stores values
+    // per property *instance* — a duplicate would leave the control reading
+    // only its defaults, silently.
     let Value = 
-        Attributes.defineBindableWithEvent
+        Attributes.Mvu.defineBindableWithEvent
             "CustomControl_Value"
-            (BindableProperty.Create("Value", typeof<float>, typeof<CustomControl>))
+            SkCustomControl.ValueProperty
             (fun target -> (target :?> CustomControl).ValueChanged)
 
 [<AutoOpen>]
@@ -455,7 +466,7 @@ module CustomControlBuilder =
         static member CustomControl(value: float, onChanged: ValueChangedEventArgs -> 'msg) =
             WidgetBuilder<'msg, ICustomControl>(
                 CustomControl.WidgetKey,
-                CustomControl.Value.WithValue(ValueEventData.create value onChanged)
+                CustomControl.Value.WithValue(MsgValueEventData.create value onChanged)
             )
 
 // Extension methods for modifiers
@@ -568,21 +579,40 @@ let view model =
 ```
 
 ### Debouncing Input
+
+Fabulous 3 ships a `Cmd.debounce` helper for programs that return `Cmd` directly.
+With the `CmdMsg` pattern used in this app, a debounce is easy to hand-roll:
+delay the message with `Async.Sleep` and drop it if the input changed meanwhile.
+
 ```fsharp
 type Msg =
     | SearchTextChanged of string
-    | DebouncedSearch of string
+    | SearchDebounceElapsed of string
+
+type CmdMsg =
+    | DebounceSearchCmd of string
+    | SearchCmd of string
 
 let update msg model =
     match msg with
     | SearchTextChanged text ->
         { model with SearchText = text },
-        [ Cmd.debounce 500 (DebouncedSearch text) ],
+        [ DebounceSearchCmd text ],
         None
-    | DebouncedSearch text ->
-        { model with IsSearching = true },
-        [ SearchCmd text ],
-        None
+    | SearchDebounceElapsed text when text = model.SearchText ->
+        // Input has been stable for the debounce interval: search
+        { model with IsSearching = true }, [ SearchCmd text ], None
+    | SearchDebounceElapsed _ ->
+        // Stale: the user kept typing, a newer debounce is in flight
+        model, [], None
+
+let mapCmdMsg = function
+    | DebounceSearchCmd text ->
+        Cmd.OfAsync.msg (async {
+            do! Async.Sleep 500
+            return SearchDebounceElapsed text
+        })
+    | SearchCmd text -> (* run the actual search *) 
 ```
 
 ## Best Practices Summary

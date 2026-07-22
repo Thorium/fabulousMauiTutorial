@@ -15,7 +15,7 @@ type Msg =
 /// Command messages for side effects
 type CmdMsg =
     | LoadTask of TaskId option
-    | SaveTaskCmd of MTask
+    | SaveTaskCmd of task: MTask * isUpdate: bool
 
 /// Model for task detail/edit screen
 type Model = {

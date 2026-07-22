@@ -45,7 +45,12 @@ module View =
                 })
                     .barBackgroundColor(Microsoft.Maui.Graphics.Colors.Blue)
                     .barTextColor(Microsoft.Maui.Graphics.Colors.White)
-            
-            Application(navPage)
-        
-        Program.statefulWithCmd init' update' view'
+
+            // Fabulous 3: an Application contains one or more Windows
+            Application() {
+                Window(navPage)
+            }
+
+        // Fabulous 3: the view is attached separately from the MVU core
+        Program.statefulWithCmd init' update'
+        |> Program.withView view'
