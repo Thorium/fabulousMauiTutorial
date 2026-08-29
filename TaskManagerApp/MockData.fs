@@ -18,7 +18,7 @@ module MockDataStore =
             Task.createDetailed "Complete a task" "Tap on a task to mark it as complete" Priority.Low
         ]
         
-        tasks.AddRange(sampleTasks)
+        tasks.AddRange sampleTasks
     
     /// Gets all tasks
     let getAllTasks() =
@@ -33,7 +33,7 @@ module MockDataStore =
     
     /// Adds a new task
     let addTask task =
-        tasks.Add(task)
+        tasks.Add task
         task
     
     /// Updates an existing task
@@ -56,7 +56,7 @@ module MockDataStore =
             taskId = id)
         
         if index >= 0 then
-            tasks.RemoveAt(index)
+            tasks.RemoveAt index
             true
         else
             false

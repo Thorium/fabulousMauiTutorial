@@ -18,7 +18,7 @@ module View =
         (VStack(spacing = 16.) {
             Label("Priority")
                 .font(size = 18., attributes = FontAttributes.Bold)
-                .textColor(Colors.Black)
+                .textColor Colors.Black
             
             Label($"Value: {int model.Priority}")
                 .font(size = 14.)
@@ -66,9 +66,9 @@ module View =
                 ScrollView(
                     (VStack() {
                         ActivityIndicator(true)
-                            .color(Colors.Blue)
+                            .color Colors.Blue
                         Label("Loading task...")
-                            .textColor(Colors.Gray)
+                            .textColor Colors.Gray
                     })
                         .centerHorizontal()
                         .centerVertical()
@@ -80,7 +80,7 @@ module View =
                         (VStack(spacing = 8.) {
                             Label("Title")
                                 .font(size = 18., attributes = FontAttributes.Bold)
-                                .textColor(Colors.Black)
+                                .textColor Colors.Black
                             
                             Entry(model.Title, TitleChanged)
                                 .placeholder("Enter task title...")
@@ -88,7 +88,7 @@ module View =
                             
                             Label($"{model.Title.Length}/{AppSettings.MaxTaskTitleLength} characters")
                                 .font(size = 10.)
-                                .textColor(Colors.Gray)
+                                .textColor Colors.Gray
                         })
                             .padding(16.)
                             .background(SolidColorBrush(Colors.White))
@@ -97,17 +97,17 @@ module View =
                         (VStack(spacing = 8.) {
                             Label("Description")
                                 .font(size = 18., attributes = FontAttributes.Bold)
-                                .textColor(Colors.Black)
+                                .textColor Colors.Black
                             
                             Editor(model.Description, DescriptionChanged)
                                 .placeholder("Enter task description...")
                                 .font(size = 16.)
                                 .autoSize(EditorAutoSizeOption.TextChanges)
-                                .minimumHeight(100.)
+                                .minimumHeight 100.
                             
                             Label($"{model.Description.Length}/{AppSettings.MaxTaskDescriptionLength} characters")
                                 .font(size = 10.)
-                                .textColor(Colors.Gray)
+                                .textColor Colors.Gray
                         })
                             .padding(16.)
                             .background(SolidColorBrush(Colors.White))
@@ -120,16 +120,16 @@ module View =
                             (if model.IsSaving then "Saving..." else "Save Task"),
                             SaveTask
                         )
-                            .isEnabled(not model.IsSaving && not (System.String.IsNullOrWhiteSpace(model.Title)))
+                            .isEnabled(not (model.IsSaving || (System.String.IsNullOrWhiteSpace model.Title)))
                             .background(SolidColorBrush(Colors.Blue))
                             .textColor(Colors.White)
                             .cornerRadius(8)
                             .padding(16.)
-                            .margin(16.)
+                            .margin 16.
                     })
-                        .padding(16.)
+                        .padding 16.
                 )
         ).toolbarItems() {
             ToolbarItem("Cancel", GoBack)
-                .order(ToolbarItemOrder.Primary)
+                .order ToolbarItemOrder.Primary
         }

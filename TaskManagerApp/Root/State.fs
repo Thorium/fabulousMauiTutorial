@@ -90,7 +90,7 @@ module State =
                     { model' with TaskListModel = taskListModel }, 
                     (cmdMsgs |> List.map TaskListCmdMsg), 
                     None
-                | _ ->
+                | TaskDetailPage _ ->
                     model', [], None
     
     /// Map command messages to Fabulous commands

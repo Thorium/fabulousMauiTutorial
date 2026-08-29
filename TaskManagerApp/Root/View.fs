@@ -44,7 +44,7 @@ module View =
                     renderPage model
                 })
                     .barBackgroundColor(Microsoft.Maui.Graphics.Colors.Blue)
-                    .barTextColor(Microsoft.Maui.Graphics.Colors.White)
+                    .barTextColor Microsoft.Maui.Graphics.Colors.White
 
             // Fabulous 3: an Application contains one or more Windows
             Application() {

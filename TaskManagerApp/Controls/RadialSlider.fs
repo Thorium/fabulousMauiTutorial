@@ -67,35 +67,35 @@ type SkRadialSlider() =
     
     // Properties
     member this.TrackColor
-        with get() = this.GetValue(trackColorProperty) :?> Color
+        with get() = this.GetValue trackColorProperty :?> Color
         and set(value: Color) = this.SetValue(trackColorProperty, value)
     
     member this.KnobColor
-        with get() = this.GetValue(knobColorProperty) :?> Color
+        with get() = this.GetValue knobColorProperty :?> Color
         and set(value: Color) = this.SetValue(knobColorProperty, value)
     
     member this.TrackProgressColor
-        with get() = this.GetValue(trackProgressColorProperty) :?> Color
+        with get() = this.GetValue trackProgressColorProperty :?> Color
         and set(value: Color) = this.SetValue(trackProgressColorProperty, value)
     
     member this.Start
-        with get() = this.GetValue(startProperty) :?> float
+        with get() = this.GetValue startProperty :?> float
         and set(value: float) = this.SetValue(startProperty, value)
     
     member this.Arc
-        with get() = this.GetValue(arcProperty) :?> float
+        with get() = this.GetValue arcProperty :?> float
         and set(value: float) = this.SetValue(arcProperty, value)
     
     member this.Minimum
-        with get() = this.GetValue(minimumProperty) :?> float
+        with get() = this.GetValue minimumProperty :?> float
         and set(value: float) = this.SetValue(minimumProperty, value)
     
     member this.Maximum
-        with get() = this.GetValue(maximumProperty) :?> float
+        with get() = this.GetValue maximumProperty :?> float
         and set(value: float) = this.SetValue(maximumProperty, value)
     
     member this.Value
-        with get() = this.GetValue(valueProperty) :?> float
+        with get() = this.GetValue valueProperty :?> float
         and set(value: float) = this.SetValue(valueProperty, value)
 
     // Expose the property instances so the Fabulous attributes below can reuse them.
@@ -117,7 +117,7 @@ type SkRadialSlider() =
         this.InvalidateSurface()
     
     override this.OnPropertyChanged(propertyName) =
-        base.OnPropertyChanged(propertyName)
+        base.OnPropertyChanged propertyName
         
         if propertyName = "TrackColor" then
             trackPaint.Color <- this.TrackColor.ToSKColor()
@@ -132,7 +132,7 @@ type SkRadialSlider() =
             this.RecalculateProgress()
     
     override this.OnTouch(e: SKTouchEventArgs) =
-        base.OnTouch(e)
+        base.OnTouch e
         hasTouch <- true
         touchX <- e.Location.X
         touchY <- e.Location.Y
@@ -207,7 +207,7 @@ type CustomRadialSlider() =
     member _.ValueChanged = valueChanged.Publish
     
     override this.OnPropertyChanged(propertyName) =
-        base.OnPropertyChanged(propertyName)
+        base.OnPropertyChanged propertyName
         if propertyName = "Value" then
             valueChanged.Trigger(this, ValueChangedEventArgs(oldValue, this.Value))
             oldValue <- this.Value

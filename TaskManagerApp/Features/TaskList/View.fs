@@ -21,7 +21,7 @@ module View =
                 Label(task.Description)
                     .font(size = 12.)
                     .textColor(Colors.Gray)
-                    .lineBreakMode(Microsoft.Maui.LineBreakMode.TailTruncation)
+                    .lineBreakMode Microsoft.Maui.LineBreakMode.TailTruncation
                 
                 (HStack(spacing = 8.) {
                     Label($"Priority: {Priority.toString task.Priority}")
@@ -35,7 +35,7 @@ module View =
                     
                     Label($"Created: {task.CreatedAt.ToShortDateString()}")
                         .font(size = 10.)
-                        .textColor(Colors.Gray)
+                        .textColor Colors.Gray
                 }).alignStartHorizontal()
             })
                 .alignStartVertical()
@@ -56,21 +56,21 @@ module View =
                 FilterChanged All
             )
                 .background(SolidColorBrush(if model.Filter = All then Colors.Blue else Colors.LightGray))
-                .textColor(Colors.White)
+                .textColor Colors.White
             
             Button(
                 "Active",
                 FilterChanged Active
             )
                 .background(SolidColorBrush(if model.Filter = Active then Colors.Blue else Colors.LightGray))
-                .textColor(Colors.White)
+                .textColor Colors.White
             
             Button(
                 "Completed",
                 FilterChanged Completed
             )
                 .background(SolidColorBrush(if model.Filter = Completed then Colors.Blue else Colors.LightGray))
-                .textColor(Colors.White)
+                .textColor Colors.White
         })
             .padding(16.)
             .centerHorizontal()
@@ -87,13 +87,13 @@ module View =
                     ContentView(
                         (VStack() {
                             ActivityIndicator(true)
-                                .color(Colors.Blue)
+                                .color Colors.Blue
                             Label("Loading tasks...")
-                                .textColor(Colors.Gray)
+                                .textColor Colors.Gray
                         })
                             .centerHorizontal()
                             .centerVertical()
-                            .padding(20.)
+                            .padding 20.
                     )
                 elif filteredTasks.IsEmpty then
                     ContentView(
@@ -115,7 +115,7 @@ module View =
                         })
                             .centerHorizontal()
                             .centerVertical()
-                            .padding(20.)
+                            .padding 20.
                     )
                 else
                     ContentView(
@@ -132,7 +132,7 @@ module View =
             })
         ).toolbarItems() {
             ToolbarItem("Add", AddNewTask)
-                .order(ToolbarItemOrder.Primary)
+                .order ToolbarItemOrder.Primary
             ToolbarItem("Refresh", RefreshTasks)
-                .order(ToolbarItemOrder.Secondary)
+                .order ToolbarItemOrder.Secondary
         }
