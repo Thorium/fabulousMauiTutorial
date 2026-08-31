@@ -85,6 +85,9 @@ module Task =
 
 /// Application-wide settings and constants
 module AppSettings =
+    [<Literal>]
     let MaxTaskTitleLength = 100
+    [<Literal>]
     let MaxTaskDescriptionLength = 500
+    [<Literal>]
     let DefaultPriorityValue = 5
