@@ -197,6 +197,7 @@ type SkRadialSlider() =
 
 
 /// F# wrapper for Fabulous integration
+[<Sealed>]
 type CustomRadialSlider() =
     inherit SkRadialSlider()
     
