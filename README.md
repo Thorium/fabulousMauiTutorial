@@ -414,7 +414,7 @@ dotnet fsi test.fsx
 
 ## Additional Resources
 
-- [Fabulous Documentation](https://docs.fabulous.dev/)
+- [Fabulous Documentation](https://github.com/fabulous-dev)
 - [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
 - [F# Language Guide](https://docs.microsoft.com/dotnet/fsharp/)
 - [MVU Architecture](https://guide.elm-lang.org/architecture/)
