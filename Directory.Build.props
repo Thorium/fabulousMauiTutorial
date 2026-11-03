@@ -1,0 +1,12 @@
+<Project>
+
+  <!-- Repository metadata, also used by fsdocs for the site header and links -->
+  <PropertyGroup>
+    <Authors>Tuomas Hietanen</Authors>
+    <Product>Task Manager</Product>
+    <RepositoryUrl>https://bitbucket.org/Thorium/fabulousmauitutorial</RepositoryUrl>
+    <PackageProjectUrl>https://bitbucket.org/Thorium/fabulousmauitutorial</PackageProjectUrl>
+    <FsDocsLicenseLink>https://bitbucket.org/Thorium/fabulousmauitutorial/src/main/LICENSE</FsDocsLicenseLink>
+  </PropertyGroup>
+
+</Project>

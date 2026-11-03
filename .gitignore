@@ -40,3 +40,8 @@ bld/
 # Rider
 .idea/
 *.sln.iml
+
+# fsdocs
+output/
+tmp/
+.fsdocs/

@@ -1,435 +1,64 @@
-# Fabulous MAUI F# Mobile Application Tutorial
+# Fabulous MAUI sample: Task Manager
 
-A comprehensive guide to building cross-platform mobile applications using Fabulous MAUI with F#.
+A cross-platform task manager for Android, iOS and Windows, written in F# with
+[Fabulous](https://github.com/fabulous-dev/Fabulous) on .NET MAUI 10. It is a starting point
+for a real app: MVU state kept in a plain library, unit tests, pluggable sign-in and a
+bearer-token HTTP client.
 
-> 📖 **New to this tutorial?** Start with [INDEX.md](INDEX.md) for a complete overview and learning path!
+<img width="405" height="727" alt="Task list screen" src="https://github.com/user-attachments/assets/5f80986c-0912-4eed-985e-66b0ba80616c" />
 
-## Table of Contents
+## Features
 
-1. [Introduction](#introduction)
-2. [What is Fabulous MAUI?](#what-is-fabulous-maui)
-3. [Getting Started](#getting-started)
-4. [MVU Architecture](#mvu-architecture)
-5. [Sample Application](#sample-application)
-6. [Project Structure](#project-structure)
-7. [Building the UI](#building-the-ui)
-8. [Custom Controls](#custom-controls)
-9. [Navigation](#navigation)
-10. [Best Practices](#best-practices)
+- Task list with filters, a task editor, and a custom SkiaSharp radial slider for priority.
+- Sign-in through any OpenID Connect provider (authorization code with PKCE in the system
+  browser). Settings for Amazon Cognito, Entra ID and Auth0 are included, plus a no-auth mode
+  and a template for custom providers.
+- A session kept in platform secure storage, refreshed before expiry and revoked on sign-out.
+- An `HttpClient` that adds the access token to backend calls.
+- MVU update functions with no MAUI dependency, covered by unit tests.
 
-## Introduction
+## Layout
 
-This tutorial demonstrates how to build a cross-platform mobile application for iOS and Android using Fabulous MAUI with F#. The sample application is a simple task management app that showcases the core concepts without exposing any sensitive business logic.
+```
+src/
+  TaskManagerApp.Logic/    Domain, feature state, root state, authentication, HTTP (net10.0)
+  TaskManagerApp/         Views, custom controls, command runners, platform code (MAUI)
+tests/
+  TaskManagerApp.Logic.Tests/
+docs/                     fsdocs guides; .fsx pages are type-checked against Logic
+```
 
-## What is Fabulous MAUI?
+## Getting started
 
-Fabulous MAUI is a declarative UI framework for building cross-platform mobile and desktop applications using F# and .NET MAUI. It uses the Model-View-Update (MVU) architecture pattern, inspired by Elm, to create predictable and maintainable applications.
-
-### Key Features
-
-- **Declarative UI**: Build UI with functional, composable components
-- **MVU Architecture**: Clear separation of concerns with unidirectional data flow
-- **Type Safety**: Leverage F#'s strong type system
-- **Cross-Platform**: Write once, run on iOS, Android, macOS, and Windows
-- **Testable**: Pure update functions can be tested in plain F# scripts, no emulator needed (see [test.fsx](test.fsx))
-
-## Getting Started
-
-### Prerequisites
-
-- .NET 10.0 SDK or later
-- Visual Studio 2022 (Windows/Mac) or JetBrains Rider
-- For iOS development: macOS with Xcode
-- For Android development: Android SDK
-
-### Installation
-
-1. Install .NET MAUI workload:
 ```bash
 dotnet workload install maui
+dotnet test tests/TaskManagerApp.Logic.Tests
+dotnet run --project src/TaskManagerApp -f net10.0-windows10.0.19041.0
+dotnet build src/TaskManagerApp -t:Run -f net10.0-android
 ```
 
-2. Create a new F# MAUI project or use the sample provided in this tutorial.
-
-> **Note on versions:** the sample targets .NET 10 / MAUI 10. The matching
-> Fabulous package line (`Fabulous.MauiControls` 9.x, which supports MAUI 9+)
-> is currently published as a prerelease, so the project references
-> `9.0.0-pre9` explicitly.
-
-## MVU Architecture
-
-The MVU (Model-View-Update) architecture consists of three main components:
-
-### Model
-The Model represents the application state. It's an immutable data structure that holds all the information needed to render the UI.
+The app starts with a demo sign-in that needs no identity provider. To use a real one, change
+`Config.auth` in `src/TaskManagerApp/Config.fs`:
 
 ```fsharp
-type Model = {
-    Tasks: MTask list
-    Filter: TaskFilter
-    IsLoading: bool
-}
+let auth =
+    Oidc(Cognito.hostedUi "myapp.auth.eu-west-2.amazoncognito.com" "<app client id>" SystemBrowser.redirectUri)
 ```
 
-### Update
-The Update function processes messages (events) and returns a new model state. It's a pure function that takes the current model and a message, then returns the updated model.
+## Guides
 
-```fsharp
-let update msg model =
-    match msg with
-    | AddTask ->
-        let newTask = { Id = Guid.NewGuid(); Title = model.NewTaskTitle; IsCompleted = false }
-        { model with Tasks = newTask :: model.Tasks; NewTaskTitle = "" }
-    | UpdateNewTaskTitle text ->
-        { model with NewTaskTitle = text }
-    | ToggleTaskCompletion taskId ->
-        let updatedTasks = 
-            model.Tasks 
-            |> List.map (fun t -> 
-                if t.Id = taskId then { t with IsCompleted = not t.IsCompleted } 
-                else t)
-        { model with Tasks = updatedTasks }
-```
+- [Architecture](docs/architecture.fsx): projects, MVU, commands, navigation, adding a feature
+- [Authentication](docs/authentication.fsx): choosing a provider, Cognito setup, custom providers,
+  the session, calling the backend
+- [Views and controls](docs/views.md): Fabulous builders, the window, the radial slider
+- [Building and running](docs/building.md): prerequisites, platforms, docs site, CI
 
-### View
-The View is a pure function that takes the model and returns a description of the UI. It uses a declarative syntax to build the UI tree.
+## Versions
 
-```fsharp
-let view model =
-    ContentPage(
-        VStack() {
-            Entry(model.NewTaskTitle, UpdateNewTaskTitle)
-            Button("Add Task", AddTask)
-            
-            for task in model.Tasks do
-                HStack() {
-                    Label(task.Title)
-                    CheckBox(task.IsCompleted, (fun _ -> ToggleTaskCompletion task.Id))
-                }
-        }
-    )
-```
+.NET 10, MAUI 10.0.120, Fabulous.MauiControls 10.0.4, SkiaSharp 3.119. Fabulous for MAUI is
+developed in the main Fabulous repository under
+[`src/maui`](https://github.com/fabulous-dev/Fabulous/tree/main/src/maui).
 
-## Sample Application
+## License
 
-The sample application included in this tutorial is a **Task Manager** app that demonstrates:
-
-- Creating and displaying tasks
-- Marking tasks as complete/incomplete
-- Filtering tasks by status
-- Using a custom radial slider for priority selection
-- In-memory data storage (no external database)
-- Clean architecture without business-specific logic
-
-### Features
-
-1. **Task Management**: Add, view, and complete tasks
-2. **Priority Slider**: Use a radial slider control to set task priority
-3. **Filtering**: View all, active, or completed tasks
-4. **Clean UI**: Modern, responsive design
-
-## Project Structure
-
-```
-FabulousMauiTutorial/
-├── README.md                          # This tutorial
-├── TaskManagerApp/                    # Sample application
-│   ├── TaskManagerApp.fsproj         # F# project file
-│   ├── MauiProgram.fs                # App initialization
-│   ├── Domain.fs                      # Domain models
-│   ├── MockData.fs                    # In-memory data store
-│   ├── Controls/
-│   │   └── RadialSlider.fs           # Custom radial slider control
-│   ├── Features/
-│   │   ├── TaskList/
-│   │   │   ├── Types.fs              # Task list types
-│   │   │   ├── State.fs              # Task list state management
-│   │   │   └── View.fs               # Task list UI
-│   │   └── TaskDetail/
-│   │       ├── Types.fs              # Task detail types
-│   │       ├── State.fs              # Task detail state management
-│   │       └── View.fs               # Task detail UI
-│   ├── Root/
-│   │   ├── Types.fs                  # Root types
-│   │   ├── State.fs                  # Root state management
-│   │   └── View.fs                   # Root view and navigation
-│   ├── Resources/                     # Images, fonts, etc.
-│   └── Platforms/                     # Platform-specific code
-│       ├── Android/
-│       └── iOS/
-```
-
-## Building the UI
-
-### Basic Components
-
-Fabulous MAUI provides builders for all standard MAUI controls:
-
-```fsharp
-// Labels
-Label("Hello, World!")
-    .font(size = 24.0)
-    .textColor(Colors.Blue)
-
-// Buttons
-Button("Click Me", OnButtonClicked)
-    .background(SolidColorBrush(Colors.Green))
-
-// Text Input
-Entry(model.Text, TextChanged)
-    .placeholder("Enter text...")
-
-// Lists
-(VStack() {
-    for item in model.Items do
-        Label(item.Name)
-}).spacing(10.0)
-```
-
-### Layout Containers
-
-```fsharp
-// Vertical Stack
-VStack() {
-    Label("Item 1")
-    Label("Item 2")
-    Label("Item 3")
-}
-
-// Horizontal Stack
-HStack() {
-    Label("Left")
-    Label("Right")
-}
-
-// Grid
-Grid(rowdefs = [Auto; Star; Auto], coldefs = [Star; Star]) {
-    Label("Header").gridRow(0).gridColumnSpan(2)
-    Label("Content 1").gridRow(1).gridColumn(0)
-    Label("Content 2").gridRow(1).gridColumn(1)
-    Label("Footer").gridRow(2).gridColumnSpan(2)
-}
-```
-
-## Custom Controls
-
-The tutorial includes a custom **Radial Slider** control for selecting task priority. This demonstrates how to integrate custom SkiaSharp-based controls into Fabulous MAUI.
-
-### Using the Radial Slider
-
-```fsharp
-RadialSlider(
-    model.Priority,
-    fun args -> PriorityChanged args.NewValue
-)
-    .minimum(0.0)
-    .maximum(10.0)
-    .trackColor(Colors.LightGray)
-    .trackProgressColor(Colors.Blue)
-    .knobColor(Colors.White)
-```
-
-### Custom Control Implementation
-
-The radial slider is implemented in F# using SkiaSharp and wrapped with Fabulous bindings:
-
-1. **F# SkiaSharp Control** (`SkRadialSlider` in `RadialSlider.fs`): Core rendering and touch handling
-2. **F# Wrapper** (`CustomRadialSlider` in `RadialSlider.fs`): CLIEvent bridge for Fabulous
-3. **Fabulous Bindings** (`RadialSliderBuilder` in `RadialSlider.fs`): Declarative widget integration
-
-> **Pitfall — reuse the control's `BindableProperty` instances.** When defining the
-> Fabulous attributes, pass the *same* `BindableProperty` objects the control itself
-> uses (exposed as `SkRadialSlider.ValueProperty` etc.). `BindableObject` stores
-> values per property *instance*, not per name — if you call
-> `BindableProperty.Create` again with the same name, everything compiles and
-> `OnPropertyChanged` even fires, but the values land in a slot the control never
-> reads, so modifiers like `.knobColor(...)` silently do nothing.
-
-## Navigation
-
-The sample app demonstrates navigation between pages:
-
-```fsharp
-// Navigation is managed in the Root update function, returning 3-tuples:
-// (Model, CmdMsg list, Msg option)
-let update msg model =
-    match msg with
-    | NavigateTo page ->
-        { model with
-            CurrentPage = page
-            NavigationStack = model.CurrentPage :: model.NavigationStack
-        }, [], None
-
-    | NavigateBack ->
-        match model.NavigationStack with
-        | [] -> model, [], None
-        | prevPage :: rest ->
-            { model with
-                CurrentPage = prevPage
-                NavigationStack = rest
-                TaskDetailModel = None
-            }, [], None
-```
-
-Navigation is handled through the MVU pattern by updating the model state.
-
-## Best Practices
-
-### 1. Keep Models Immutable
-Always create new model instances instead of mutating existing ones.
-
-```fsharp
-// Good
-{ model with NewField = value }
-
-// Bad (don't do this)
-model.NewField <- value
-```
-
-### 2. Pure Functions
-Keep update and view functions pure (no side effects).
-
-```fsharp
-// Pure update function
-let update msg model =
-    match msg with
-    | Increment -> { model with Counter = model.Counter + 1 }
-```
-
-### 3. Use Commands for Side Effects
-Handle side effects (API calls, storage) using commands.
-
-```fsharp
-// CmdMsg defines side-effect commands; Msg handles their results
-type CmdMsg =
-    | LoadTasks
-    | ToggleCompletion of TaskId
-    | DeleteTaskCmd of TaskId
-
-let mapCmdMsg = function
-    | LoadTasks ->
-        Cmd.OfAsync.msg (async {
-            let! tasks = TaskApi.loadTasks()
-            return TasksLoaded tasks
-        })
-    | ToggleCompletion taskId ->
-        Cmd.OfAsync.msg (async {
-            let! result = TaskApi.toggleTaskCompletion taskId
-            return TaskUpdated result
-        })
-    | DeleteTaskCmd taskId ->
-        Cmd.OfAsync.msg (async {
-            let! _ = TaskApi.deleteTask taskId
-            let! tasks = TaskApi.loadTasks()
-            return TasksLoaded tasks
-        })
-```
-
-### 4. Organize by Feature
-Structure your code by feature rather than by technical layer.
-
-```
-Features/
-├── TaskList/
-│   ├── Types.fs
-│   ├── State.fs
-│   └── View.fs
-```
-
-### 5. Composition Over Inheritance
-Use composition and higher-order functions instead of inheritance.
-
-```fsharp
-let taskCard task onToggle =
-    Border(
-        HStack() {
-            Label(task.Title)
-            CheckBox(task.IsCompleted, onToggle)
-        }
-    )
-        .stroke(Colors.Gray)
-        .padding(10.0)
-```
-
-### 6. Type Safety
-Leverage F#'s type system to prevent errors.
-
-```fsharp
-type TaskId = TaskId of Guid
-type Priority = 
-    | Low 
-    | Medium 
-    | High
-
-type MTask = {
-    Id: TaskId
-    Title: string
-    Description: string
-    Priority: Priority
-    IsCompleted: bool
-    CreatedAt: DateTime
-}
-```
-
-## Running the Sample App
-
-**Important:** See [BUILD_NOTES.md](BUILD_NOTES.md) for prerequisite setup (MAUI workload required).
-
-1. Navigate to the TaskManagerApp directory:
-```bash
-cd FabulousMauiTutorial/TaskManagerApp
-```
-
-2. Restore dependencies:
-```bash
-dotnet restore
-```
-
-3. Run on Android:
-```bash
-dotnet build -t:Run -f net10.0-android
-```
-
-4. Run on iOS (macOS only — the `net10.0-ios` target framework is enabled automatically when building on macOS):
-```bash
-dotnet build -t:Run -f net10.0-ios
-```
-
-5. Run the logic smoke tests (no MAUI or emulator needed):
-```bash
-dotnet fsi test.fsx
-```
-
-## 📚 Additional Documentation
-
-- **[INDEX.md](INDEX.md)** - Complete overview and learning path
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Detailed setup and build instructions
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep architectural insights
-- **[BUILD_NOTES.md](BUILD_NOTES.md)** - Build requirements and troubleshooting
-- **[CODE_EXAMPLES.md](CODE_EXAMPLES.md)** - Code patterns and snippets
-- **[DIAGRAMS.md](DIAGRAMS.md)** - Visual architecture diagrams
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - One-page cheat sheet
-- **[SUMMARY.md](SUMMARY.md)** - Project overview
-- **[test.fsx](test.fsx)** - Runnable logic smoke tests (`dotnet fsi test.fsx`)
-
-## Additional Resources
-
-- [Fabulous Documentation](https://github.com/fabulous-dev)
-- [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
-- [F# Language Guide](https://docs.microsoft.com/dotnet/fsharp/)
-- [MVU Architecture](https://guide.elm-lang.org/architecture/)
-- [The Elmish Book](https://zaid-ajaj.github.io/the-elmish-book/)
-- [Guidance for .NET systems development](https://gist.github.com/Thorium/b33dd7c5dd165b76d8517bf2525fe51e)
-
-## Conclusion
-
-This tutorial provides a foundation for building cross-platform mobile applications with Fabulous MAUI and F#. The sample Task Manager app demonstrates core concepts while remaining generic and business-agnostic.
-
-Key takeaways:
-- MVU architecture provides a clear, predictable application structure
-- Fabulous enables declarative UI with F#'s functional programming features
-- Custom controls can be integrated seamlessly
-- Type safety helps prevent runtime errors
-- The framework supports modern mobile app development patterns
-
-Happy coding! 🚀
+Public domain ([Unlicense](LICENSE)).

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- No backup: SecureStorage entries cannot be decrypted after a restore to another device -->
+  <application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" />
+  <!-- Debug builds add INTERNET automatically; release builds need it declared -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!-- Android 11+: lets WebAuthenticator find a Custom Tabs browser for sign-in -->
+  <queries>
+    <intent>
+      <action android:name="android.support.customtabs.action.CustomTabsService" />
+    </intent>
+  </queries>
+</manifest>

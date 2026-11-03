@@ -1,0 +1,100 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <!-- Windows can only be built on Windows, so the TFM is added there automatically -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+    <!-- iOS can only be built on macOS, so the TFM is added there automatically -->
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net10.0-ios</TargetFrameworks>
+    <!-- Windows runs unpackaged (no MSIX), so `dotnet run` and F5 work without a signing certificate -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <!-- F#: stop the Windows App SDK from injecting a C# auto-initializer (FS0226) -->
+    <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TaskManagerApp</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- Display name -->
+    <ApplicationTitle>Task Manager</ApplicationTitle>
+
+    <!-- App Identifier -->
+    <ApplicationId>com.tutorial.taskmanager</ApplicationId>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <!-- .NET 10 raises the platform minimums: iOS 15, Android API 24 -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    <!-- The Windows app host cannot be AnyCPU; default to the building machine's architecture (win-x64 or
+         win-arm64) unless the caller picks a runtime -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <Platform Condition="'$(Platform)' == '' AND '$(RuntimeIdentifier)' == 'win-arm64'">ARM64</Platform>
+    <Platform Condition="'$(Platform)' == '' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">x64</Platform>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App Icon -->
+    <MauiIcon Include="Resources\Images\appicon.svg" ForegroundFile="Resources\Images\appiconfg.svg" Color="#512BD4" />
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Images\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <!-- Images (icon and splash are declared above — MAUI 10 errors on duplicates) -->
+    <MauiImage Include="Resources\Images\*" Exclude="Resources\Images\appicon.svg;Resources\Images\appiconfg.svg;Resources\Images\splash.svg" />
+    <!-- Fonts -->
+    <MauiFont Include="Resources\Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Controls\RadialSlider.fs" />
+    <Compile Include="Controls\Busy.fs" />
+    <Compile Include="Auth\SystemBrowser.fs" />
+    <Compile Include="Auth\SecureSessionStore.fs" />
+    <Compile Include="Config.fs" />
+    <Compile Include="Commands.fs" />
+    <Compile Include="Features\TaskList\View.fs" />
+    <Compile Include="Features\TaskDetail\View.fs" />
+    <Compile Include="Features\SignIn\View.fs" />
+    <Compile Include="Root\View.fs" />
+    <Compile Include="MauiProgram.fs" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <AndroidManifest>Platforms\Android\AndroidManifest.xml</AndroidManifest>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <Compile Include="Platforms\Android\MainActivity.fs" />
+    <Compile Include="Platforms\Android\MainApplication.fs" />
+    <Compile Include="Platforms\Android\WebAuthenticationCallbackActivity.fs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <Compile Include="Platforms\iOS\AppDelegate.fs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <Manifest Include="Platforms\Windows\app.manifest" />
+    <!-- Used only when packaging as MSIX (WindowsPackageType MSIX): fill in Identity, Publisher and the assets first -->
+    <AppxManifest Include="Platforms\Windows\Package.appxmanifest" />
+    <Compile Include="Platforms\Windows\App.fs" />
+    <Compile Include="Platforms\Windows\Main.fs" />
+    <!-- Precompiled WinUI application class and entry point for F# -->
+    <PackageReference Include="FSharp.Maui.WinUICompat" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskManagerApp.Logic\TaskManagerApp.Logic.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.120" />
+    <PackageReference Include="Fabulous.MauiControls" Version="10.0.4" />
+    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="3.119.4" />
+  </ItemGroup>
+
+</Project>

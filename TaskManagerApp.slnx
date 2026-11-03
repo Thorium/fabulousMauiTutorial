@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TaskManagerApp.Logic/TaskManagerApp.Logic.fsproj" />
+    <Project Path="src/TaskManagerApp/TaskManagerApp.fsproj">
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TaskManagerApp.Logic.Tests/TaskManagerApp.Logic.Tests.fsproj" />
+  </Folder>
+</Solution>
