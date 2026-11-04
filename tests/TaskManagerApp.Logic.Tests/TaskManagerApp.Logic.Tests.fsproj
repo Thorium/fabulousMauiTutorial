@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Fakes.fs" />
     <Compile Include="AuthTests.fs" />
+    <Compile Include="RedirectTests.fs" />
     <Compile Include="SessionManagerTests.fs" />
     <Compile Include="StateTests.fs" />
   </ItemGroup>

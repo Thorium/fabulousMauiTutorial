@@ -26,9 +26,16 @@ type BearerTokenHandler(session: SessionManager, inner: HttpMessageHandler) =
 
 module ApiClient =
 
+    /// Doesn't follow redirects: a request's body, such as a refresh token, would go to wherever one points.
+    let private platformHandler () =
+        new HttpClientHandler(AllowAutoRedirect = false)
+
+    /// An HttpClient for the identity provider's token endpoint.
+    let createForSignIn () = new HttpClient(platformHandler ())
+
     /// An HttpClient for your backend that sends the access token when a session manager is given.
     let create (baseAddress: Uri) (session: SessionManager voption) =
-        let platform = new HttpClientHandler()
+        let platform = platformHandler ()
 
         let handler: HttpMessageHandler =
             match session with

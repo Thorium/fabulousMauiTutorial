@@ -249,7 +249,8 @@ let messages =
 ## Calling the backend
 
 `ApiClient.create` returns an `HttpClient` that adds `Authorization: Bearer <access token>`
-to each request. Without a valid session the request is not sent and the caller gets
+to each request. It doesn't follow redirects, and neither does `ApiClient.createForSignIn`'s client for the token
+endpoint: a request's body, such as a refresh token, would go to wherever one points. Without a valid session the request is not sent and the caller gets
 `401 Unauthorized`, the same answer the backend gives for a bad token, so both are handled
 in one place:
 

@@ -34,7 +34,7 @@ module View =
     /// Root application program and view
     let app =
         let session =
-            SessionManager.create (new HttpClient()) SystemBrowser.authenticate SecureSessionStore.store Config.auth
+            SessionManager.create (TaskManagerApp.Http.ApiClient.createForSignIn ()) SystemBrowser.authenticate SecureSessionStore.store Config.auth
 
         let runCommand = Commands.root session
 
