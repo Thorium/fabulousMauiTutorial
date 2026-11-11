@@ -225,7 +225,7 @@ let loggedCognito =
 | `Restore` | Loads the stored session at start-up; refreshes it when expired; keeps it when offline |
 | `SignIn` | Runs the provider's sign-in and stores the session; a cancelled token gives `Error Cancelled` |
 | `AccessToken` | Returns a token with more than a minute left, refreshing first if needed; concurrent callers share one refresh |
-| `SignOut` | Revokes the refresh token and opens the end-session page where the provider has them, then clears the store |
+| `SignOut` | Clears the store, then revokes the refresh token and opens the end-session page where the provider has them; a page the user closes is given up after 30 seconds |
 
 A refresh token the provider rejects ends the session with `SessionExpired`, and the user sees
 the sign-in page again. The app stores the session with `SecureSessionStore` (Keychain,
@@ -252,7 +252,8 @@ let messages =
 to each request. It doesn't follow redirects, and neither does `ApiClient.createForSignIn`'s client for the token
 endpoint: a request's body, such as a refresh token, would go to wherever one points. Without a valid session the request is not sent and the caller gets
 `401 Unauthorized`, the same answer the backend gives for a bad token, so both are handled
-in one place:
+in one place. When the token cannot be refreshed because the provider is unreachable or failing,
+the request throws `HttpRequestException` like any other network failure and the session is kept:
 
 ```fsharp
 let api = ApiClient.create (Uri "https://api.example.com/") session

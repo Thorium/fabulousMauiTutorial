@@ -10,6 +10,7 @@ open System.Threading.Tasks
 /// are serialized here.
 type SessionManager(provider: AuthProvider, store: SessionStore, clock: unit -> DateTimeOffset) =
     let gate = new SemaphoreSlim(1, 1)
+    let browserGate = new SemaphoreSlim(1, 1)
     let mutable current: Session voption = ValueNone
 
     let needsRefresh (session: Session) =
@@ -48,6 +49,18 @@ type SessionManager(provider: AuthProvider, store: SessionStore, clock: unit -> 
                 gate.Release() |> ignore
         }
 
+    /// One browser flow at a time: a sign-in waits for a sign-out's end-session page, and a second
+    /// sign-out for the first. Taken before `gate`, never after it.
+    let interactive (cancellation: CancellationToken) (action: unit -> Task<'T>) =
+        task {
+            do! browserGate.WaitAsync cancellation
+
+            try
+                return! action ()
+            finally
+                browserGate.Release() |> ignore
+        }
+
     /// Tokens are refreshed when they have less than this left.
     static member RefreshMargin = TimeSpan.FromMinutes 1.
 
@@ -83,12 +96,13 @@ type SessionManager(provider: AuthProvider, store: SessionStore, clock: unit -> 
         task {
             try
                 return!
-                    exclusive cancellation (fun () ->
-                        task {
-                            match! provider.SignIn cancellation with
-                            | Ok session -> return! adopt session
-                            | Error error -> return Error error
-                        })
+                    interactive cancellation (fun () ->
+                        exclusive cancellation (fun () ->
+                            task {
+                                match! provider.SignIn cancellation with
+                                | Ok session -> return! adopt session
+                                | Error error -> return Error error
+                            }))
             with
             | :? OperationCanceledException -> return Error Cancelled
             | e -> return Error(Unexpected e.Message)
@@ -106,19 +120,33 @@ type SessionManager(provider: AuthProvider, store: SessionStore, clock: unit -> 
                 | ValueSome session -> return Ok session.Tokens.AccessToken
             })
 
-    member _.SignOut(cancellation) =
-        exclusive cancellation (fun () ->
-            task {
-                match current with
-                | ValueSome session ->
-                    try
-                        do! provider.SignOut session cancellation
-                    with
-                    | :? HttpRequestException
-                    | :? TaskCanceledException -> ()
+    /// The provider's part of a sign-out (revocation, end-session page) is given up after this long.
+    static member SignOutTimeout = TimeSpan.FromSeconds 30.
 
-                    do! drop ()
-                | ValueNone -> do! drop ()
+    /// Clears the local session first, then lets the provider revoke what it can. The provider's
+    /// part runs outside the gate and never fails the sign-out: an end-session page the user
+    /// closes must neither keep the session stored nor block token requests.
+    member _.SignOut(cancellation: CancellationToken) =
+        interactive cancellation (fun () ->
+            task {
+                let! session =
+                    exclusive cancellation (fun () ->
+                        task {
+                            let session = current
+                            do! drop ()
+                            return session
+                        })
+
+                match session with
+                | ValueSome session ->
+                    use timeout = CancellationTokenSource.CreateLinkedTokenSource cancellation
+                    timeout.CancelAfter SessionManager.SignOutTimeout
+
+                    try
+                        do! provider.SignOut session timeout.Token
+                    with _ ->
+                        ()
+                | ValueNone -> ()
             })
 
 module SessionManager =

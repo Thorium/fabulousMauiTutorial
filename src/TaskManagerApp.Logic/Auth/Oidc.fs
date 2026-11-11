@@ -4,6 +4,7 @@ module TaskManagerApp.Auth.Oidc
 
 open System
 open System.Collections.Generic
+open System.Net
 open System.Net.Http
 open System.Text.Json
 open System.Threading
@@ -92,7 +93,7 @@ let private post (http: HttpClient) (endpoint: Uri) (form: (string * string) lis
             use content = new FormUrlEncodedContent(form |> List.map KeyValuePair)
             use! response = http.PostAsync(endpoint, content, cancellation)
             let! body = response.Content.ReadAsStringAsync cancellation
-            return Ok(response.IsSuccessStatusCode, body)
+            return Ok(response.StatusCode, body)
         with
         | :? HttpRequestException as e -> return Error(Unavailable e.Message)
         | :? TaskCanceledException when not cancellation.IsCancellationRequested ->
@@ -103,8 +104,12 @@ let private requestTokens http (settings: OidcSettings) previous form cancellati
     task {
         match! post http settings.TokenEndpoint form cancellation with
         | Error error -> return Error error
-        | Ok(true, body) -> return readTokens DateTimeOffset.UtcNow previous body |> Result.bind sessionOf
-        | Ok(false, body) -> return Error(readError body)
+        | Ok(status, body) when int status >= 200 && int status < 300 ->
+            return readTokens DateTimeOffset.UtcNow previous body |> Result.bind sessionOf
+        // The provider is failing or throttling, which says nothing about the tokens: try again later
+        | Ok(status, _) when int status >= 500 || status = HttpStatusCode.TooManyRequests ->
+            return Error(Unavailable $"The token endpoint answered {int status}.")
+        | Ok(_, body) -> return Error(readError body)
     }
 
 let provider (http: HttpClient) (browser: SignInBrowser) (settings: OidcSettings) : AuthProvider =

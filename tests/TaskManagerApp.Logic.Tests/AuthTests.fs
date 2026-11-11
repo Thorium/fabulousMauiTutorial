@@ -142,6 +142,19 @@ let ``a rejected refresh token ends the session`` () =
     Assert.Equal(Error SessionExpired, (provider.Refresh (session DateTimeOffset.UtcNow) CancellationToken.None).Result)
     Assert.Equal("refresh-old", (Seq.exactlyOne endpoint.Forms)["refresh_token"])
 
+[<Theory>]
+[<InlineData(HttpStatusCode.ServiceUnavailable)>]
+[<InlineData(HttpStatusCode.BadGateway)>]
+[<InlineData(HttpStatusCode.TooManyRequests)>]
+let ``a failing or throttling token endpoint is unavailable, not a rejected session`` (status: HttpStatusCode) =
+    let endpoint = new TokenEndpoint(fun _ -> status, "<html>try later</html>")
+    let browser, _ = browser true []
+    let provider = Oidc.provider (new HttpClient(endpoint)) browser settings
+
+    match (provider.Refresh (session DateTimeOffset.UtcNow) CancellationToken.None).Result with
+    | Error(Unavailable _) -> ()
+    | other -> Assert.Fail $"Expected Unavailable, got %A{other}"
+
 [<Fact>]
 let ``sign-out revokes the refresh token and ends the browser session`` () =
     let endpoint = new TokenEndpoint(fun _ -> HttpStatusCode.OK, "")

@@ -9,7 +9,9 @@ open TaskManagerApp.Auth
 
 /// Adds the signed-in user's access token to every request. Without a valid session the request
 /// is not sent and the caller gets 401 Unauthorized, the same answer an expired token would get
-/// from the backend, so callers handle both in one place.
+/// from the backend, so callers handle both in one place. When the token cannot be refreshed
+/// because the provider is unreachable or failing, the request fails with HttpRequestException,
+/// like any other network failure, and the session is kept.
 type BearerTokenHandler(session: SessionManager, inner: HttpMessageHandler) =
     inherit DelegatingHandler(inner)
 
@@ -21,6 +23,9 @@ type BearerTokenHandler(session: SessionManager, inner: HttpMessageHandler) =
             | Ok token ->
                 request.Headers.Authorization <- AuthenticationHeaderValue("Bearer", token)
                 return! this.SendInner(request, cancellation)
+            // The session may still be good (offline, provider down): a 401 here would sign the user out
+            | Error(Unavailable message) ->
+                return raise (HttpRequestException $"No access token for the request: {message}")
             | Error _ -> return new HttpResponseMessage(HttpStatusCode.Unauthorized, RequestMessage = request)
         }
 
